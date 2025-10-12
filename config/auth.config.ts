@@ -54,6 +54,8 @@ export type UserData = {
   email: string;
   profileImage: string;
   alertNotification: boolean;
+  pushNotification: boolean;
+  expoPushToken: string | null;
   createdAt: Date;
   role: "user" | "admin";
   oauthId: string;
