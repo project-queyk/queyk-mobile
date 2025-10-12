@@ -15,6 +15,10 @@ import {
   UserData,
 } from "@/config/auth.config";
 import { signInToBackend } from "@/utils/auth";
+import {
+  registerForPushNotifications,
+  updatePushTokenInBackend,
+} from "@/utils/pushNotifications";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -52,6 +56,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (storedUserData) {
           const parsedUserData = JSON.parse(storedUserData);
           setUserData(parsedUserData);
+
+          try {
+            const pushToken = await registerForPushNotifications();
+
+            if (
+              pushToken &&
+              pushToken !== parsedUserData.expoPushToken &&
+              parsedUserData.id
+            ) {
+              await updatePushTokenInBackend(
+                parsedUserData.id,
+                pushToken,
+                process.env.EXPO_PUBLIC_AUTH_TOKEN || ""
+              );
+
+              const updatedUserData = {
+                ...parsedUserData,
+                expoPushToken: pushToken,
+              };
+              setUserData(updatedUserData);
+              await SecureStore.setItemAsync(
+                USERDATA_KEY,
+                JSON.stringify(updatedUserData)
+              );
+            }
+          } catch (pushNotificationError) {
+            console.error(
+              "Push notification setup failed on app load:",
+              pushNotificationError
+            );
+          }
         }
 
         try {
@@ -91,6 +126,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         USERDATA_KEY,
         JSON.stringify(backendResponse.data)
       );
+
+      try {
+        const pushToken = await registerForPushNotifications();
+
+        if (pushToken && backendResponse.data.id) {
+          await updatePushTokenInBackend(
+            backendResponse.data.id,
+            pushToken,
+            process.env.EXPO_PUBLIC_AUTH_TOKEN || ""
+          );
+
+          const updatedUserData = {
+            ...backendResponse.data,
+            expoPushToken: pushToken,
+          };
+          setUserData(updatedUserData);
+          await SecureStore.setItemAsync(
+            USERDATA_KEY,
+            JSON.stringify(updatedUserData)
+          );
+        }
+      } catch (pushNotificationError) {
+        console.error("Push notification setup failed:", pushNotificationError);
+      }
     }
   }
 
