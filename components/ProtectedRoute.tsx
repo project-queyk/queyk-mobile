@@ -5,7 +5,7 @@ import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, userData, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -14,12 +14,20 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
     const inAuthGroup = segments[0] === "(tabs)";
 
-    if (!user && inAuthGroup) {
-      router.replace("/sign-in");
-    } else if (user && !inAuthGroup) {
-      router.replace("/(tabs)");
+    if (!user) {
+      if (inAuthGroup || segments[0] !== "sign-in") {
+        router.replace("/sign-in");
+      }
+    } else if (user) {
+      if (!inAuthGroup) {
+        if (userData?.role === "admin") {
+          router.replace("/(tabs)/dashboard");
+        } else {
+          router.replace("/(tabs)/evacuation-plan");
+        }
+      }
     }
-  }, [user, segments, isLoading, router]);
+  }, [user, userData, segments, isLoading, router]);
 
   if (isLoading) {
     return (

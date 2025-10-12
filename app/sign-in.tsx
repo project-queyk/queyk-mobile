@@ -17,20 +17,26 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 
+import Card from "@/components/Card";
+
 export default function SignInScreen() {
-  const { user, isLoading, signIn } = useAuth();
+  const { user, userData, isLoading, signIn } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && user) {
-      router.replace("/(tabs)");
+    if (!isLoading && user && userData) {
+      if (userData.role === "admin") {
+        router.replace("/(tabs)/dashboard");
+      }
+      router.replace("/(tabs)/evacuation-plan");
     }
-  }, [user, isLoading, router]);
+  }, [user, userData, isLoading, router]);
 
   async function handleGoogleSignIn() {
     try {
       await signIn();
     } catch (error) {
+      console.error("Sign in error:", error);
       if (isErrorWithCode(error)) {
         switch (error.code) {
           case statusCodes.SIGN_IN_CANCELLED:
@@ -45,12 +51,18 @@ export default function SignInScreen() {
           default:
             Alert.alert("Error", "An unknown error occurred.");
         }
+      } else if (error instanceof Error) {
+        if (error.message.includes("email addresses are allowed")) {
+          Alert.alert("Access Denied", error.message, [{ text: "OK" }]);
+        } else {
+          Alert.alert(
+            "Error",
+            error.message || "An error occurred during sign in.",
+            [{ text: "OK" }]
+          );
+        }
       } else {
-        Alert.alert(
-          "Access Denied",
-          `Only ${process.env.EXPO_PUBLIC_SCHOOL_EMAIL_DOMAIN} email addresses are allowed to sign in.`,
-          [{ text: "OK" }]
-        );
+        Alert.alert("Error", "An unexpected error occurred.");
       }
     }
   }
@@ -65,11 +77,12 @@ export default function SignInScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
+      <Card>
         <View style={styles.logoContainer}>
           <Image
             source={require("../assets/images/icons/queyk-black.png")}
             style={styles.logoImage}
+            contentFit="contain"
           />
           <Text style={styles.logoText}>Queyk</Text>
         </View>
@@ -84,10 +97,11 @@ export default function SignInScreen() {
           <Image
             source={require("../assets/images/icons/google-white-icon.png")}
             style={styles.googleLogoImage}
+            contentFit="contain"
           />
           <Text style={styles.buttonText}>Sign in with Google</Text>
         </TouchableOpacity>
-      </View>
+      </Card>
     </View>
   );
 }
@@ -100,14 +114,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
   },
-  card: {
-    width: "100%",
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
-    borderRadius: 16,
-  },
   logoContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -115,7 +121,6 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 20,
     height: 20,
-    resizeMode: "contain",
   },
   logoText: {
     fontSize: 18,
@@ -162,7 +167,6 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     marginBottom: 1,
-    resizeMode: "contain",
   },
   buttonText: {
     color: "#ffffff",

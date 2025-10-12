@@ -1,0 +1,41 @@
+import { BackendUserResponse } from "@/config/auth.config";
+import { User } from "@react-native-google-signin/google-signin";
+
+export async function signInToBackend(
+  profile: User
+): Promise<BackendUserResponse> {
+  const userValues = {
+    email: profile.user.email,
+    name: `${profile.user.givenName} ${profile.user.familyName}`,
+    oauthId: profile.user.id,
+    profileImage: profile.user.photo,
+  };
+
+  try {
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/api/users`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.EXPO_PUBLIC_AUTH_TOKEN}`,
+          "Content-Type": "application/json",
+          "Token-Type": "auth",
+        },
+        body: JSON.stringify(userValues),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Backend returned ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Backend authentication failed: ${error.message}`);
+    }
+    throw new Error("Backend authentication failed: Unknown error occurred");
+  }
+}

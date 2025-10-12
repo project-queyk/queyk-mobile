@@ -4,6 +4,8 @@
  * This file contains configuration settings for the authentication system.
  */
 
+import { User } from "@react-native-google-signin/google-signin";
+
 export const AUTH_CONFIG = {
   /**
    * Allowed email domain for sign-in
@@ -45,3 +47,35 @@ export const isValidEmailDomain = (email: string): boolean => {
 export const getDomainRestrictionMessage = (attemptedEmail: string): string => {
   return `Only ${AUTH_CONFIG.ALLOWED_EMAIL_DOMAIN} email addresses are allowed. You signed in with: ${attemptedEmail}`;
 };
+
+export type UserData = {
+  id: string;
+  name: string;
+  email: string;
+  profileImage: string;
+  alertNotification: boolean;
+  createdAt: Date;
+  role: "user" | "admin";
+  oauthId: string;
+};
+
+export type BackendUserResponse = {
+  message: string;
+  statusCode: 200 | 201;
+  data: UserData;
+};
+
+export type BackendErrorResponse = {
+  message: string;
+  error: string;
+  statusCode: 400 | 401 | 500;
+};
+
+export interface AuthContextType {
+  user: User | null;
+  userData: UserData | null;
+  isLoading: boolean;
+  signIn: () => Promise<void>;
+  signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+}
