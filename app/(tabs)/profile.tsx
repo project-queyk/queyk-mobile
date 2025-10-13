@@ -22,8 +22,9 @@ export default function Profile() {
   const [emailNotificationIsEnabled, setEmailNotificationIsEnabled] = useState(
     accountData?.alertNotification || false
   );
-  const [pushNotificationIsEnabled, setPushNotificationIsEnabled] =
-    useState(false);
+  const [pushNotificationIsEnabled, setPushNotificationIsEnabled] = useState(
+    accountData?.pushNotification || false
+  );
 
   async function handleSignOut() {
     try {
@@ -56,7 +57,10 @@ export default function Profile() {
     },
   });
 
-  const { mutate, isPending: emailNotificationUpdateIsLoading } = useMutation({
+  const {
+    mutate: updateEmailNotification,
+    isPending: emailNotificationUpdateIsLoading,
+  } = useMutation({
     mutationFn: async (newValue: boolean) => {
       const response = await fetch(
         `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/api/users/${userData?.data.id}/notifications`,
@@ -74,11 +78,45 @@ export default function Profile() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to update notification preference");
+        throw new Error("Failed to update email notification preference");
       }
 
       const data = await response.json();
       setEmailNotificationIsEnabled(() => data.data.alertNotification);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", accountData?.id] });
+    },
+  });
+
+  const {
+    mutate: updatePushNotification,
+    isPending: pushNotificationUpdateIsLoading,
+  } = useMutation({
+    mutationFn: async (newValue: boolean) => {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/api/users/${userData?.data.id}/push-notifications`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            pushNotification: newValue,
+          }),
+          headers: {
+            Authorization: `Bearer ${process.env.EXPO_PUBLIC_USER_TOKEN}`,
+            "Token-Type": "user",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update push notification preference");
+      }
+
+      const data = await response.json();
+      console.log(data);
+      setPushNotificationIsEnabled(() => data.data.pushNotification);
       return data;
     },
     onSuccess: () => {
@@ -103,7 +141,7 @@ export default function Profile() {
           text: "Continue",
           onPress: () => {
             const currentValue = userData?.data?.alertNotification || false;
-            mutate(!currentValue);
+            updateEmailNotification(!currentValue);
           },
         },
       ]
@@ -126,7 +164,8 @@ export default function Profile() {
         {
           text: "Continue",
           onPress: () => {
-            setPushNotificationIsEnabled((prev) => !prev);
+            const currentValue = userData?.data?.pushNotification || false;
+            updatePushNotification(!currentValue);
           },
         },
       ]
@@ -151,22 +190,20 @@ export default function Profile() {
               style={styles.profileImage}
               contentFit="contain"
             />
-            <View style={{ flex: 1 }}>
-              <Text
-                style={styles.profileName}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {accountData.name}
-              </Text>
-              <Text
-                style={styles.profileEmail}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {accountData.email}
-              </Text>
-            </View>
+            <Text
+              style={styles.profileName}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {accountData.name}
+            </Text>
+            <Text
+              style={styles.profileEmail}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {accountData.email}
+            </Text>
           </View>
         </Card>
       )}
@@ -174,40 +211,47 @@ export default function Profile() {
         <Card>
           <View style={styles.cardContent}>
             <Text style={styles.headerText}>Settings</Text>
-            <TouchableOpacity
-              style={styles.settingsItem}
-              onPress={toggleEmailNotificationAlert}
-              activeOpacity={0.9}
-              disabled={emailNotificationUpdateIsLoading}
-            >
+            <View style={styles.settingsItem}>
               <Text style={styles.settingsText}>
                 Email alerts for earthquake activity
               </Text>
-              <Switch
-                trackColor={{ false: "#e5e5e5", true: "#193867" }}
-                thumbColor={emailNotificationIsEnabled ? "#ffffff" : "#f4f3f4"}
-                ios_backgroundColor="#3e3e3e"
-                value={emailNotificationIsEnabled}
-                disabled
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.settingsItem}
-              onPress={togglePushNotificationAlert}
-              activeOpacity={0.9}
-              disabled={emailNotificationUpdateIsLoading}
-            >
+              <TouchableOpacity
+                onPress={toggleEmailNotificationAlert}
+                activeOpacity={0.9}
+                disabled={emailNotificationUpdateIsLoading}
+                style={{ marginTop: 4 }}
+              >
+                <Switch
+                  trackColor={{ false: "#e5e5e5", true: "#193867" }}
+                  thumbColor={
+                    emailNotificationIsEnabled ? "#ffffff" : "#f4f3f4"
+                  }
+                  ios_backgroundColor="#3e3e3e"
+                  value={emailNotificationIsEnabled}
+                  disabled
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.settingsItem}>
               <Text style={styles.settingsText}>
                 Push notifications for earthquake activity
               </Text>
-              <Switch
-                trackColor={{ false: "#e5e5e5", true: "#193867" }}
-                thumbColor={pushNotificationIsEnabled ? "#ffffff" : "#f4f3f4"}
-                ios_backgroundColor="#3e3e3e"
-                value={pushNotificationIsEnabled}
-                disabled
-              />
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={togglePushNotificationAlert}
+                activeOpacity={0.9}
+                disabled={pushNotificationUpdateIsLoading}
+                style={{ marginTop: 4 }}
+              >
+                <Switch
+                  trackColor={{ false: "#e5e5e5", true: "#193867" }}
+                  thumbColor={pushNotificationIsEnabled ? "#ffffff" : "#f4f3f4"}
+                  ios_backgroundColor="#3e3e3e"
+                  value={pushNotificationIsEnabled}
+                  disabled
+                  pointerEvents="none"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
         </Card>
       </View>
@@ -224,7 +268,9 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   cardTitle: {
-    flexDirection: "row",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
     gap: 4,
   },
   cardContent: {
@@ -260,11 +306,13 @@ const styles = StyleSheet.create({
     }),
   },
   settingsItem: {
+    width: "85%",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   settingsText: {
+    width: "100%",
     fontSize: 14,
     color: "#212529",
     fontFamily: Platform.select({
