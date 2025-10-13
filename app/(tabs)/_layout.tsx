@@ -13,8 +13,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#ffd43b",
-        tabBarInactiveTintColor: "#d9dbdd",
+        tabBarActiveTintColor: "#193967",
+        tabBarInactiveTintColor: "#b2b2b2ff",
         headerStyle: { backgroundColor: "#F2F4F7" },
         headerTitleStyle: {
           fontFamily: Platform.select({
@@ -25,7 +25,13 @@ export default function TabLayout() {
         },
         headerShadowVisible: false,
         tabBarButton: HapticTab,
-        tabBarStyle: { backgroundColor: "#193967" },
+        tabBarStyle: {
+          backgroundColor: "#F2F4F7",
+          paddingTop: 6,
+          paddingBottom: 6,
+          height: 84,
+          borderTopColor: "#e2e3e4ff",
+        },
         tabBarLabelStyle: {
           fontFamily: Platform.select({
             android: "PlusJakartaSans_500Medium",
