@@ -14,7 +14,7 @@ import {
   isValidEmailDomain,
   UserData,
 } from "@/config/auth.config";
-import { signInToBackend, validateUserInBackend } from "@/utils/auth";
+import { fetchLatestUserData, signInToBackend } from "@/utils/auth";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -52,11 +52,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (storedUserData) {
           const parsedUserData = JSON.parse(storedUserData);
 
-          const userExistsInBackend = await validateUserInBackend(
-            parsedUserData
-          );
+          const latestUserData = await fetchLatestUserData(parsedUserData);
 
-          if (!userExistsInBackend) {
+          if (!latestUserData) {
             await SecureStore.deleteItemAsync(USER_KEY);
             await SecureStore.deleteItemAsync(USERDATA_KEY);
             setUser(null);
@@ -64,7 +62,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return;
           }
 
-          setUserData(parsedUserData);
+          setUserData(latestUserData);
+          await SecureStore.setItemAsync(
+            USERDATA_KEY,
+            JSON.stringify(latestUserData)
+          );
         }
 
         try {
@@ -132,6 +134,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  async function refreshUserData() {
+    if (!userData) {
+      throw new Error("No user data to refresh");
+    }
+
+    try {
+      const latestUserData = await fetchLatestUserData(userData);
+
+      if (!latestUserData) {
+        await signOut();
+        throw new Error("User no longer exists in backend");
+      }
+
+      setUserData(latestUserData);
+      await SecureStore.setItemAsync(
+        USERDATA_KEY,
+        JSON.stringify(latestUserData)
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -141,6 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signIn,
         signOut,
         refreshUser,
+        refreshUserData,
       }}
     >
       {children}

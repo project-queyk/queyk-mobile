@@ -80,4 +80,5 @@ export interface AuthContextType {
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  refreshUserData: () => Promise<void>;
 }
