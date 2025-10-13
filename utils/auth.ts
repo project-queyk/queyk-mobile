@@ -1,5 +1,27 @@
-import { BackendUserResponse } from "@/config/auth.config";
+import { BackendUserResponse, UserData } from "@/config/auth.config";
 import { User } from "@react-native-google-signin/google-signin";
+
+export async function validateUserInBackend(
+  userData: UserData
+): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/api/users/${userData.id}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${process.env.EXPO_PUBLIC_AUTH_TOKEN}`,
+          "Content-Type": "application/json",
+          "Token-Type": "auth",
+        },
+      }
+    );
+
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
 
 export async function signInToBackend(
   profile: User

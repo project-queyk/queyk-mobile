@@ -14,7 +14,7 @@ import {
   isValidEmailDomain,
   UserData,
 } from "@/config/auth.config";
-import { signInToBackend } from "@/utils/auth";
+import { signInToBackend, validateUserInBackend } from "@/utils/auth";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -51,6 +51,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (storedUserData) {
           const parsedUserData = JSON.parse(storedUserData);
+
+          const userExistsInBackend = await validateUserInBackend(
+            parsedUserData
+          );
+
+          if (!userExistsInBackend) {
+            await SecureStore.deleteItemAsync(USER_KEY);
+            await SecureStore.deleteItemAsync(USERDATA_KEY);
+            setUser(null);
+            setUserData(null);
+            return;
+          }
+
           setUserData(parsedUserData);
         }
 
