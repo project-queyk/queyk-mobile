@@ -49,20 +49,28 @@ export default function SignInScreen() {
             Alert.alert("Error", "Play Services not available or outdated.");
             break;
           default:
-            Alert.alert("Error", "An unknown error occurred.");
+            Alert.alert(
+              "Google Sign-In Error",
+              `Error Code: ${error.code}\nMessage: ${
+                error.message || "Unknown Google Sign-In error"
+              }`
+            );
         }
       } else if (error instanceof Error) {
         if (error.message.includes("email addresses are allowed")) {
           Alert.alert("Access Denied", error.message, [{ text: "OK" }]);
         } else {
           Alert.alert(
-            "Error",
+            "Sign-In Error",
             error.message || "An error occurred during sign in.",
             [{ text: "OK" }]
           );
         }
       } else {
-        Alert.alert("Error", "An unexpected error occurred.");
+        Alert.alert(
+          "Unexpected Error",
+          `Something went wrong: ${JSON.stringify(error)}`
+        );
       }
     }
   }
