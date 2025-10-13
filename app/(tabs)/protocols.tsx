@@ -1,8 +1,9 @@
 import { FlatList, Platform, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import Card from "@/components/Card";
 import { protocols } from "@/utils/protocols";
+
+import Card from "@/components/Card";
 
 export default function Protocols() {
   return (
@@ -24,7 +25,7 @@ export default function Protocols() {
               <View
                 style={{
                   gap: 4,
-                  borderBottomColor: "#dadadaff",
+                  borderBottomColor: "#e5e5e5",
                   borderBottomWidth: 1,
                   paddingBottom: 16,
                 }}
