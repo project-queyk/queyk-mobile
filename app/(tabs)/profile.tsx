@@ -377,10 +377,10 @@ const styles = StyleSheet.create({
   settingsText: {
     width: "100%",
     fontSize: 14,
-    color: "#212529",
+    color: "#565b60ff",
     fontFamily: Platform.select({
-      android: "PlusJakartaSans_500Medium",
-      ios: "PlusJakartaSans-Medium",
+      android: "PlusJakartaSans_400Regular",
+      ios: "PlusJakartaSans-Regular",
     }),
   },
   button: {
