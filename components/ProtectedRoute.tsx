@@ -3,11 +3,14 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useThemeColor } from "@/hooks/use-theme-color";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, userData, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const backgroundColor = useThemeColor({}, "background");
+  const tintColor = useThemeColor({}, "tint");
 
   useEffect(() => {
     if (isLoading) return;
@@ -31,8 +34,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#4285F4" />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor,
+        }}
+      >
+        <ActivityIndicator size="large" color={tintColor} />
       </View>
     );
   }
