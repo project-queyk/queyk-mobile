@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Platform,
@@ -13,6 +13,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  requestPushNotificationPermissions,
+  updatePushTokenInBackend,
+} from "@/utils/pushNotifications";
 
 import Card from "@/components/Card";
 
@@ -23,7 +27,7 @@ export default function Profile() {
     accountData?.alertNotification || false
   );
   const [pushNotificationIsEnabled, setPushNotificationIsEnabled] = useState(
-    accountData?.pushNotification || false
+    Boolean(accountData?.pushNotification && accountData?.expoPushToken)
   );
 
   async function handleSignOut() {
@@ -56,6 +60,14 @@ export default function Profile() {
       return data;
     },
   });
+
+  useEffect(() => {
+    if (userData?.data) {
+      const backendEnabled = userData.data.pushNotification || false;
+      const hasToken = Boolean(userData.data.expoPushToken);
+      setPushNotificationIsEnabled(backendEnabled && hasToken);
+    }
+  }, [userData?.data]);
 
   const {
     mutate: updateEmailNotification,
@@ -95,6 +107,30 @@ export default function Profile() {
     isPending: pushNotificationUpdateIsLoading,
   } = useMutation({
     mutationFn: async (newValue: boolean) => {
+      let expoPushToken = "";
+
+      if (newValue) {
+        const permissionResult = await requestPushNotificationPermissions();
+
+        if (!permissionResult.granted) {
+          throw new Error("Push notification permissions were denied");
+        }
+
+        expoPushToken = permissionResult.token || "";
+
+        if (expoPushToken && userData?.data.id) {
+          await updatePushTokenInBackend(
+            userData.data.id,
+            expoPushToken,
+            process.env.EXPO_PUBLIC_AUTH_TOKEN || ""
+          );
+        }
+
+        if (!expoPushToken) {
+          throw new Error("Failed to get push notification token");
+        }
+      }
+
       const response = await fetch(
         `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/api/users/${userData?.data.id}/push-notifications`,
         {
@@ -115,12 +151,20 @@ export default function Profile() {
       }
 
       const data = await response.json();
-      console.log(data);
-      setPushNotificationIsEnabled(() => data.data.pushNotification);
+      const shouldEnable = newValue
+        ? Boolean(data.data.pushNotification && expoPushToken)
+        : false;
+      setPushNotificationIsEnabled(shouldEnable);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", accountData?.id] });
+    },
+    onError: (error) => {
+      const currentBackendValue = userData?.data?.pushNotification || false;
+      const hasValidToken = Boolean(userData?.data?.expoPushToken);
+      setPushNotificationIsEnabled(currentBackendValue && hasValidToken);
+      Alert.alert("Error", error.message);
     },
   });
 
@@ -149,13 +193,29 @@ export default function Profile() {
   }
 
   function togglePushNotificationAlert() {
+    const backendEnabled = userData?.data?.pushNotification || false;
+    const hasToken = Boolean(userData?.data?.expoPushToken);
+    const needsTokenRefresh = backendEnabled && !hasToken;
+
+    let message = "";
+    if (pushNotificationIsEnabled) {
+      message =
+        "You will no longer receive push alerts when earthquake activity is detected.";
+    } else if (needsTokenRefresh) {
+      message =
+        "Push notifications are enabled but need to be reauthorized. We'll ask for notification permissions to refresh your token.";
+    } else {
+      message =
+        "You will receive push alerts when earthquake activity is detected. We'll ask for notification permissions if needed.";
+    }
+
     Alert.alert(
       pushNotificationIsEnabled
         ? "Disable Push Notifications?"
+        : needsTokenRefresh
+        ? "Refresh Push Notifications?"
         : "Enable Push Notifications?",
-      pushNotificationIsEnabled
-        ? "You will no longer receive push alerts when earthquake activity is detected."
-        : "You will receive push alerts when earthquake activity is detected.",
+      message,
       [
         {
           text: "Cancel",
@@ -164,8 +224,10 @@ export default function Profile() {
         {
           text: "Continue",
           onPress: () => {
-            const currentValue = userData?.data?.pushNotification || false;
-            updatePushNotification(!currentValue);
+            const newValue = needsTokenRefresh
+              ? true
+              : !pushNotificationIsEnabled;
+            updatePushNotification(newValue);
           },
         },
       ]
@@ -229,6 +291,7 @@ export default function Profile() {
                   ios_backgroundColor="#3e3e3e"
                   value={emailNotificationIsEnabled}
                   disabled
+                  pointerEvents="none"
                 />
               </TouchableOpacity>
             </View>

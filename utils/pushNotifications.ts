@@ -97,3 +97,48 @@ export async function updatePushTokenInBackend(
     throw error;
   }
 }
+
+/**
+ * Request push notification permissions and get token if granted
+ * @returns Object containing permission status and token (if granted)
+ */
+export async function requestPushNotificationPermissions(): Promise<{
+  granted: boolean;
+  token?: string;
+}> {
+  if (!Device.isDevice) {
+    return { granted: false };
+  }
+
+  try {
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      return { granted: false };
+    }
+
+    const pushTokenData = await Notifications.getExpoPushTokenAsync({
+      projectId: Constants.expoConfig?.extra?.eas?.projectId,
+    });
+
+    if (Device.osName === "Android") {
+      await Notifications.setNotificationChannelAsync("default", {
+        name: "default",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF231F7C",
+      });
+    }
+
+    return { granted: true, token: pushTokenData.data };
+  } catch {
+    return { granted: false };
+  }
+}
