@@ -34,12 +34,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsOnline(connected);
   }
 
+  const lastRefreshRef = React.useRef<number>(0);
+  const REFRESH_INTERVAL = 60 * 1000;
   const refreshUserDataSilently = useCallback(async () => {
     if (!userData) return;
-
+    const now = Date.now();
+    if (now - lastRefreshRef.current < REFRESH_INTERVAL) {
+      return;
+    }
+    lastRefreshRef.current = now;
     try {
       const latestUserData = await fetchLatestUserData(userData);
-
       if (latestUserData && latestUserData !== userData) {
         setUserData(latestUserData);
         await SecureStore.setItemAsync(
@@ -50,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.log("Silent refresh failed:", error);
     }
-  }, [userData]);
+  }, [userData, REFRESH_INTERVAL]);
 
   useEffect(() => {
     loadUserFromStorage();
