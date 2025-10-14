@@ -77,6 +77,7 @@ export interface AuthContextType {
   user: User | null;
   userData: UserData | null;
   isLoading: boolean;
+  isOnline: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;

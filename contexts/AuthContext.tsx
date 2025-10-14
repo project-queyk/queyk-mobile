@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import React, {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -15,6 +16,7 @@ import {
   UserData,
 } from "@/config/auth.config";
 import { fetchLatestUserData, signInToBackend } from "@/utils/auth";
+import { isConnected, subscribeToNetworkChanges } from "@/utils/network";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -25,10 +27,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
+
+  async function checkInitialNetworkState() {
+    const connected = await isConnected();
+    setIsOnline(connected);
+  }
+
+  const refreshUserDataSilently = useCallback(async () => {
+    if (!userData) return;
+
+    try {
+      const latestUserData = await fetchLatestUserData(userData);
+
+      if (latestUserData && latestUserData !== userData) {
+        setUserData(latestUserData);
+        await SecureStore.setItemAsync(
+          USERDATA_KEY,
+          JSON.stringify(latestUserData)
+        );
+      }
+    } catch (error) {
+      console.log("Silent refresh failed:", error);
+    }
+  }, [userData]);
 
   useEffect(() => {
     loadUserFromStorage();
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToNetworkChanges((connected) => {
+      setIsOnline(connected);
+
+      if (connected && userData && !isLoading) {
+        refreshUserDataSilently();
+      }
+    });
+
+    checkInitialNetworkState();
+
+    return () => {
+      unsubscribe();
+    };
+  }, [userData, isLoading, refreshUserDataSilently]);
 
   async function loadUserFromStorage() {
     try {
@@ -52,30 +94,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (storedUserData) {
           const parsedUserData = JSON.parse(storedUserData);
 
-          const latestUserData = await fetchLatestUserData(parsedUserData);
+          setUserData(parsedUserData);
 
-          if (!latestUserData) {
-            await SecureStore.deleteItemAsync(USER_KEY);
-            await SecureStore.deleteItemAsync(USERDATA_KEY);
-            setUser(null);
-            setUserData(null);
-            return;
+          const connected = await isConnected();
+          if (connected) {
+            const latestUserData = await fetchLatestUserData(parsedUserData);
+
+            if (!latestUserData) {
+              await SecureStore.deleteItemAsync(USER_KEY);
+              await SecureStore.deleteItemAsync(USERDATA_KEY);
+              setUser(null);
+              setUserData(null);
+              return;
+            }
+
+            if (
+              JSON.stringify(latestUserData) !== JSON.stringify(parsedUserData)
+            ) {
+              setUserData(latestUserData);
+              await SecureStore.setItemAsync(
+                USERDATA_KEY,
+                JSON.stringify(latestUserData)
+              );
+            }
           }
-
-          setUserData(latestUserData);
-          await SecureStore.setItemAsync(
-            USERDATA_KEY,
-            JSON.stringify(latestUserData)
-          );
         }
 
-        try {
-          await GoogleSignin.signInSilently();
-        } catch {
-          await SecureStore.deleteItemAsync(USER_KEY);
-          await SecureStore.deleteItemAsync(USERDATA_KEY);
-          setUser(null);
-          setUserData(null);
+        const connected = await isConnected();
+        if (connected) {
+          try {
+            await GoogleSignin.signInSilently();
+          } catch {
+            if (connected) {
+              await SecureStore.deleteItemAsync(USER_KEY);
+              await SecureStore.deleteItemAsync(USERDATA_KEY);
+              setUser(null);
+              setUserData(null);
+            }
+          }
         }
       }
     } finally {
@@ -84,6 +140,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   async function signIn() {
+    const connected = await isConnected();
+    if (!connected) {
+      throw new Error(
+        "Internet connection required for sign in. Please check your connection and try again."
+      );
+    }
+
     await GoogleSignin.hasPlayServices();
     const userInfo = await GoogleSignin.signIn();
 
@@ -92,20 +155,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (!isValidEmailDomain(userEmail)) {
         await GoogleSignin.signOut();
-
         throw new Error(getDomainRestrictionMessage(userEmail));
       }
 
-      setUser(userInfo.data);
-      const backendResponse = await signInToBackend(userInfo.data);
+      try {
+        const backendResponse = await signInToBackend(userInfo.data);
 
-      setUserData(backendResponse.data);
+        setUser(userInfo.data);
+        setUserData(backendResponse.data);
 
-      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userInfo.data));
-      await SecureStore.setItemAsync(
-        USERDATA_KEY,
-        JSON.stringify(backendResponse.data)
-      );
+        await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userInfo.data));
+        await SecureStore.setItemAsync(
+          USERDATA_KEY,
+          JSON.stringify(backendResponse.data)
+        );
+      } catch (error) {
+        await GoogleSignin.signOut();
+
+        throw error;
+      }
     }
   }
 
@@ -139,6 +207,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error("No user data to refresh");
     }
 
+    const connected = await isConnected();
+    if (!connected) {
+      throw new Error(
+        "Internet connection required to refresh user data. Using cached data."
+      );
+    }
+
     try {
       const latestUserData = await fetchLatestUserData(userData);
 
@@ -163,6 +238,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         userData,
         isLoading,
+        isOnline,
         signIn,
         signOut,
         refreshUser,

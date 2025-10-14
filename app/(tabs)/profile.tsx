@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useNetworkStatus } from "@/hooks/use-network-status";
 import {
   requestPushNotificationPermissions,
   updatePushTokenInBackend,
@@ -22,6 +23,7 @@ import Card from "@/components/Card";
 
 export default function Profile() {
   const { userData: accountData, signOut } = useAuth();
+  const { isOffline } = useNetworkStatus();
   const queryClient = useQueryClient();
   const [emailNotificationIsEnabled, setEmailNotificationIsEnabled] = useState(
     accountData?.alertNotification || false
@@ -274,13 +276,16 @@ export default function Profile() {
           <View style={styles.cardContent}>
             <Text style={styles.headerText}>Settings</Text>
             <View style={styles.settingsItem}>
-              <Text style={styles.settingsText}>
+              <Text
+                style={[styles.settingsText, isOffline && styles.disabledText]}
+              >
                 Email alerts for earthquake activity
+                {isOffline && " (Requires internet)"}
               </Text>
               <TouchableOpacity
                 onPress={toggleEmailNotificationAlert}
                 activeOpacity={0.9}
-                disabled={emailNotificationUpdateIsLoading}
+                disabled={emailNotificationUpdateIsLoading || isOffline}
                 style={{ marginTop: 4 }}
               >
                 <Switch
@@ -296,13 +301,16 @@ export default function Profile() {
               </TouchableOpacity>
             </View>
             <View style={styles.settingsItem}>
-              <Text style={styles.settingsText}>
+              <Text
+                style={[styles.settingsText, isOffline && styles.disabledText]}
+              >
                 Push notifications for earthquake activity
+                {isOffline && " (Requires internet)"}
               </Text>
               <TouchableOpacity
                 onPress={togglePushNotificationAlert}
                 activeOpacity={0.9}
-                disabled={pushNotificationUpdateIsLoading}
+                disabled={pushNotificationUpdateIsLoading || isOffline}
                 style={{ marginTop: 4 }}
               >
                 <Switch
@@ -382,6 +390,10 @@ const styles = StyleSheet.create({
       android: "PlusJakartaSans_400Regular",
       ios: "PlusJakartaSans-Regular",
     }),
+  },
+  disabledText: {
+    opacity: 0.5,
+    color: "#999",
   },
   button: {
     backgroundColor: "#e7000b",
