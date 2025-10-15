@@ -1,8 +1,14 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useDateRange } from "@marceloterreiro/flash-calendar";
+import MaskedView from "@react-native-masked-view/masked-view";
 import { useQuery } from "@tanstack/react-query";
+import * as FileSystem from "expo-file-system/legacy";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams } from "expo-router";
+import * as Sharing from "expo-sharing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -21,7 +27,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatSeismicMonitorDateFromFlash } from "@/utils/date-adapter";
 
 import Card from "@/components/Card";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export type ReadingData = {
   battery: number;
@@ -455,6 +460,59 @@ export default function Dashboard() {
         }),
       }));
 
+  async function downloadReport(
+    pdfBase64: string,
+    startDate?: string,
+    endDate?: string
+  ) {
+    try {
+      Alert.alert(
+        "Downloading",
+        "Please wait while we prepare your seismic report..."
+      );
+
+      const dateNow = new Date();
+      const timestamp = dateNow
+        .toISOString()
+        .replace("T", "_")
+        .replace(/:/g, "-")
+        .split(".")[0];
+
+      const filename =
+        startDate && endDate
+          ? `seismic-report-${startDate.split("T")[0]}-to-${
+              endDate.split("T")[0]
+            }_${timestamp}.pdf`
+          : `seismic-report_${timestamp}.pdf`;
+
+      const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+      await FileSystem.writeAsStringAsync(fileUri, pdfBase64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const isAvailable = await Sharing.isAvailableAsync();
+
+      if (isAvailable) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Save Seismic Report",
+        });
+        Alert.alert("Download Complete", "Your seismic report is ready!");
+      } else {
+        Alert.alert(
+          "Download Complete",
+          "Seismic report downloaded successfully to app storage!"
+        );
+      }
+    } catch {
+      Alert.alert(
+        "Download Error",
+        "Failed to download the seismic report. Please try again."
+      );
+    }
+  }
+
   return (
     <SafeAreaView
       edges={["left", "right"]}
@@ -512,13 +570,24 @@ export default function Dashboard() {
                 : "Select date range"}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button} activeOpacity={0.9}>
+          <TouchableOpacity
+            style={styles.button}
+            activeOpacity={0.9}
+            onPress={() =>
+              downloadReport(
+                readingsData.pdfBase64,
+                customDateRange?.startId,
+                customDateRange?.endId
+              )
+            }
+          >
             <MaterialIcons
               name="description"
               size={16}
               color="#F2F4F7"
               style={{ marginTop: 1 }}
             />
+            <Text style={styles.buttonText}>Generate</Text>
           </TouchableOpacity>
         </View>
         <Card>
@@ -738,7 +807,41 @@ export default function Dashboard() {
           </View>
         </Card>
         <Card variant="ai">
-          <Text style={styles.headerText}>AI Summary</Text>
+          <MaskedView
+            maskElement={
+              <Text
+                style={[
+                  styles.headerText,
+                  {
+                    paddingBottom: 4,
+                    fontWeight: "600",
+                    color: "black",
+                  },
+                ]}
+              >
+                AI Summary
+              </Text>
+            }
+          >
+            <LinearGradient
+              colors={["#9333ea", "#2563eb", "#06b6d4"]}
+              start={[0, 0]}
+              end={[1, 0]}
+              style={{ flex: 1 }}
+            >
+              <Text
+                style={[
+                  styles.headerText,
+                  {
+                    opacity: 0,
+                    paddingBottom: 4,
+                  },
+                ]}
+              >
+                AI Summary
+              </Text>
+            </LinearGradient>
+          </MaskedView>
           <View>
             {readingsDataIsLoading ? (
               <View style={{ gap: 8, marginTop: 2 }}>
@@ -753,6 +856,9 @@ export default function Dashboard() {
                   : "No AI summary available for the selected period"}
               </Text>
             )}
+            <Text style={[styles.cardValueSubText, { marginTop: -8 }]}>
+              AI-generated analysis of seismic activity patterns
+            </Text>
           </View>
         </Card>
         <Card>
@@ -775,7 +881,7 @@ export default function Dashboard() {
                   </Text>
                 </View>
               )}
-              <Text style={styles.cardSubText}>
+              <Text style={styles.cardValueSubText}>
                 Current IoT sensor battery level
               </Text>
             </View>
@@ -969,11 +1075,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  buttonText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_600SemiBold",
+      ios: "PlusJakartaSans-SemiBold",
+    }),
+  },
   cardValue: {
+    color: "#193867",
     fontSize: 22,
     fontFamily: Platform.select({
       android: "PlusJakartaSans_600SemiBold",
       ios: "PlusJakartaSans-SemiBold",
+    }),
+  },
+  cardValueSubText: {
+    color: "#565b60ff",
+    fontSize: 12,
+    marginTop: 4,
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_400Regular",
+      ios: "PlusJakartaSans-Regular",
     }),
   },
   cardSubText: {
