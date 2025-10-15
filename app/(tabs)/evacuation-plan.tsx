@@ -108,7 +108,7 @@ export default function EvacuationPlan() {
               borderColor: "#e5e5e5",
               height: 40,
               borderWidth: 1,
-              borderRadius: 6,
+              borderRadius: 8,
               padding: 8,
               marginTop: 14,
             }}
@@ -210,9 +210,9 @@ const styles = StyleSheet.create({
   secondaryButton: {
     borderColor: "#e5e5e5",
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 8,
     backgroundColor: "#f1f3f5",
-    padding: 8,
+    padding: 12,
   },
   floorPlanImage: { width: "100%", aspectRatio: 1280 / 720, marginTop: 12 },
   bulletItemTitle: {

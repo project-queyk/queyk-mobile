@@ -512,7 +512,14 @@ export default function Dashboard() {
                 : "Select date range"}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.selectBox}></TouchableOpacity>
+          <TouchableOpacity style={styles.button} activeOpacity={0.9}>
+            <MaterialIcons
+              name="description"
+              size={16}
+              color="#F2F4F7"
+              style={{ marginTop: 1 }}
+            />
+          </TouchableOpacity>
         </View>
         <Card>
           <View>
@@ -953,6 +960,15 @@ const styles = StyleSheet.create({
       ios: "PlusJakartaSans-Regular",
     }),
   },
+  button: {
+    backgroundColor: "#193867",
+    padding: 12,
+    borderRadius: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
   cardValue: {
     fontSize: 22,
     fontFamily: Platform.select({
@@ -1000,8 +1016,9 @@ const styles = StyleSheet.create({
   selectBox: {
     borderColor: "#e5e5e5",
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 8,
     padding: 8,
+    height: 40,
     marginTop: 4,
     flexDirection: "row",
     gap: 8,
