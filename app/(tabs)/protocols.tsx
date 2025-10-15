@@ -62,7 +62,7 @@ export default function Protocols() {
 
 const styles = StyleSheet.create({
   headerText: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#212529",
     fontFamily: Platform.select({
       android: "PlusJakartaSans_600SemiBold",
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   },
   cardContent: { gap: 24, marginTop: 14 },
   bulletItemTitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#193867",
     fontFamily: Platform.select({
       android: "PlusJakartaSans_600SemiBold",

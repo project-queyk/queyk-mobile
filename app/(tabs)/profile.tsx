@@ -280,7 +280,6 @@ export default function Profile() {
                 style={[styles.settingsText, isOffline && styles.disabledText]}
               >
                 Email alerts for earthquake activity
-                {isOffline && " (Requires internet)"}
               </Text>
               <TouchableOpacity
                 onPress={toggleEmailNotificationAlert}
@@ -289,9 +288,17 @@ export default function Profile() {
                 style={{ marginTop: 4 }}
               >
                 <Switch
-                  trackColor={{ false: "#e5e5e5", true: "#193867" }}
+                  trackColor={
+                    isOffline
+                      ? { false: "#f5f5f5ff", true: "#325b98ff" }
+                      : { false: "#e5e5e5", true: "#193867" }
+                  }
                   thumbColor={
-                    emailNotificationIsEnabled ? "#ffffff" : "#f4f3f4"
+                    isOffline
+                      ? "#f0f0f0"
+                      : pushNotificationIsEnabled
+                      ? "#ffffff"
+                      : "#f4f3f4"
                   }
                   ios_backgroundColor="#3e3e3e"
                   value={emailNotificationIsEnabled}
@@ -305,7 +312,6 @@ export default function Profile() {
                 style={[styles.settingsText, isOffline && styles.disabledText]}
               >
                 Push notifications for earthquake activity
-                {isOffline && " (Requires internet)"}
               </Text>
               <TouchableOpacity
                 onPress={togglePushNotificationAlert}
@@ -314,8 +320,18 @@ export default function Profile() {
                 style={{ marginTop: 4 }}
               >
                 <Switch
-                  trackColor={{ false: "#e5e5e5", true: "#193867" }}
-                  thumbColor={pushNotificationIsEnabled ? "#ffffff" : "#f4f3f4"}
+                  trackColor={
+                    isOffline
+                      ? { false: "#f5f5f5ff", true: "#325b98ff" }
+                      : { false: "#e5e5e5", true: "#193867" }
+                  }
+                  thumbColor={
+                    isOffline
+                      ? "#f0f0f0"
+                      : pushNotificationIsEnabled
+                      ? "#ffffff"
+                      : "#f4f3f4"
+                  }
                   ios_backgroundColor="#3e3e3e"
                   value={pushNotificationIsEnabled}
                   disabled

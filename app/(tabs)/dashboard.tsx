@@ -24,6 +24,7 @@ import { LineChart } from "react-native-gifted-charts";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useNetworkStatus } from "@/hooks/use-network-status";
 import { formatSeismicMonitorDateFromFlash } from "@/utils/date-adapter";
 
 import Card from "@/components/Card";
@@ -203,6 +204,7 @@ function DatePickerModal({
 
 export default function Dashboard() {
   const { userData } = useAuth();
+  const { isOffline } = useNetworkStatus();
   const params = useLocalSearchParams();
   const [persistedFirstDate, setPersistedFirstDate] = useState<
     Date | undefined
@@ -297,7 +299,9 @@ export default function Dashboard() {
       return data;
     },
     enabled:
-      !!(dateRange?.startId || dateRange?.endId) && userData?.role === "admin",
+      !!(dateRange?.startId || dateRange?.endId) &&
+      userData?.role === "admin" &&
+      !isOffline,
   });
 
   const {
@@ -326,7 +330,7 @@ export default function Dashboard() {
 
       return response.json();
     },
-    enabled: userData?.role === "admin",
+    enabled: userData?.role === "admin" && !isOffline,
   });
 
   useEffect(() => {
@@ -547,12 +551,13 @@ export default function Dashboard() {
           }}
         >
           <TouchableOpacity
-            style={styles.selectBox}
+            style={[styles.selectBox, { opacity: isOffline ? 0.7 : 1 }]}
             activeOpacity={0.9}
             onPress={() => {
               setIsDatePickerModalVisible(true);
             }}
-            disabled={false}
+            aria-disabled={isOffline}
+            disabled={isOffline}
           >
             <MaterialIcons
               name="calendar-today"
@@ -571,7 +576,7 @@ export default function Dashboard() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, { opacity: isOffline ? 0.7 : 1 }]}
             activeOpacity={0.9}
             onPress={() =>
               downloadReport(
@@ -580,6 +585,8 @@ export default function Dashboard() {
                 customDateRange?.endId
               )
             }
+            aria-disabled={isOffline}
+            disabled={isOffline}
           >
             <MaterialIcons
               name="description"
@@ -1051,7 +1058,7 @@ export default function Dashboard() {
 
 const styles = StyleSheet.create({
   headerText: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#212529",
     fontFamily: Platform.select({
       android: "PlusJakartaSans_600SemiBold",

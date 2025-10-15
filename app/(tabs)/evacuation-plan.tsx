@@ -15,12 +15,14 @@ import {
 import { Dropdown } from "react-native-element-dropdown";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useNetworkStatus } from "@/hooks/use-network-status";
 import { floors } from "@/utils/floors";
 import { safetyGuidelines } from "@/utils/safety-guidelines";
 
 import Card from "@/components/Card";
 
 export default function EvacuationPlan() {
+  const { isOffline } = useNetworkStatus();
   const [selectedFloor, setSelectedFloor] = useState("gymnasium");
   const [isFocus, setIsFocus] = useState(false);
 
@@ -93,8 +95,13 @@ export default function EvacuationPlan() {
               <Text style={styles.headerText}>Evacuation Floor Plans</Text>
               <TouchableOpacity
                 activeOpacity={0.9}
-                style={styles.secondaryButton}
+                style={[
+                  styles.secondaryButton,
+                  { opacity: isOffline ? 0.7 : 1 },
+                ]}
                 onPress={downloadEvacuationPlan}
+                aria-disabled={isOffline}
+                disabled={isOffline}
               >
                 <MaterialIcons name="get-app" size={16} color="#212529" />
               </TouchableOpacity>
@@ -191,7 +198,7 @@ export default function EvacuationPlan() {
 
 const styles = StyleSheet.create({
   headerText: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#212529",
     fontFamily: Platform.select({
       android: "PlusJakartaSans_600SemiBold",
@@ -216,7 +223,7 @@ const styles = StyleSheet.create({
   },
   floorPlanImage: { width: "100%", aspectRatio: 1280 / 720, marginTop: 12 },
   bulletItemTitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#193867",
     fontFamily: Platform.select({
       android: "PlusJakartaSans_600SemiBold",
