@@ -6,6 +6,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -180,10 +181,10 @@ function DatePickerModal({
             onConfirm={(date: Date) => {
               const diffTime = Math.abs(date.getTime() - startDate.getTime());
               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-              if (date >= startDate && diffDays <= 7) {
+              if (date >= startDate && diffDays <= 5) {
                 setEndDate(date);
               } else {
-                alert("Please select a date range of 7 days or less.");
+                alert("Please select a date range of 4 days or less.");
               }
               setShowEndPicker(false);
             }}
@@ -246,7 +247,12 @@ export default function Dashboard() {
     }
   }, [params.selectedStartId, params.selectedEndId]);
 
-  const { data: readingsData, isLoading: readingsDataIsLoading } = useQuery({
+  const {
+    data: readingsData,
+    isLoading: readingsDataIsLoading,
+    refetch: refetchReadingsData,
+    isRefetching: isRefetchingReadingsData,
+  } = useQuery({
     queryKey: ["readings", customDateRange?.startId, customDateRange?.endId],
     queryFn: async () => {
       if (!customDateRange?.startId && !customDateRange?.endId) return null;
@@ -287,6 +293,35 @@ export default function Dashboard() {
     },
     enabled:
       !!(dateRange?.startId || dateRange?.endId) && userData?.role === "admin",
+  });
+
+  const {
+    data: earthquakesData,
+    isLoading: earthquakeDataIsLoading,
+    refetch: refetchEarthquakesData,
+    isRefetching: isRefetchingEarthquakesData,
+  } = useQuery({
+    queryKey: ["earthquakes"],
+    queryFn: async () => {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/api/earthquakes`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${process.env.EXPO_PUBLIC_ADMIN_TOKEN}`,
+            "Content-Type": "application/json",
+            "Token-Type": "admin",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch earthquake records");
+      }
+
+      return response.json();
+    },
+    enabled: userData?.role === "admin",
   });
 
   useEffect(() => {
@@ -377,29 +412,48 @@ export default function Dashboard() {
     (r) => typeof r.siAverage === "number"
   );
 
-  const chartDataAverage = filteredReadings.map((reading) => ({
-    value: reading.siAverage,
-    label: new Date(reading.createdAt).toLocaleDateString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-    }),
+  const mockChartData = Array.from({ length: 14 }, (_, i) => ({
+    value: Number((Math.random() * 0.4 + 0.05).toFixed(3)),
+    label: `10/${i + 1}/2025`,
   }));
 
-  const chartDataMaximum = filteredReadings.map((reading) => ({
-    value: reading.siMaximum,
-    label: new Date(reading.createdAt).toLocaleDateString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-    }),
-  }));
+  const chartDataAverage = readingsDataIsLoading
+    ? mockChartData
+    : filteredReadings.map((reading) => ({
+        value: reading.siAverage,
+        label: new Date(reading.createdAt).toLocaleDateString("en-US", {
+          month: "2-digit",
+          day: "2-digit",
+        }),
+      }));
 
-  const chartDataMinimum = filteredReadings.map((reading) => ({
-    value: reading.siMinimum,
-    label: new Date(reading.createdAt).toLocaleDateString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-    }),
-  }));
+  const chartDataMaximum = readingsDataIsLoading
+    ? mockChartData.map((d) => ({
+        ...d,
+        value: Number((d.value + Math.random() * 0.4 + 0.1).toFixed(3)),
+      }))
+    : filteredReadings.map((reading) => ({
+        value: reading.siMaximum,
+        label: new Date(reading.createdAt).toLocaleDateString("en-US", {
+          month: "2-digit",
+          day: "2-digit",
+        }),
+      }));
+
+  const chartDataMinimum = readingsDataIsLoading
+    ? mockChartData.map((d) => ({
+        ...d,
+        value: Number(
+          Math.max(0, d.value - Math.random() * 0.1 - 0.01).toFixed(3)
+        ),
+      }))
+    : filteredReadings.map((reading) => ({
+        value: reading.siMinimum,
+        label: new Date(reading.createdAt).toLocaleDateString("en-US", {
+          month: "2-digit",
+          day: "2-digit",
+        }),
+      }));
 
   return (
     <SafeAreaView
@@ -412,7 +466,20 @@ export default function Dashboard() {
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ gap: 12 }}
+        contentContainerStyle={{ gap: 12, paddingBottom: 16 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetchingReadingsData || isRefetchingEarthquakesData}
+            onRefresh={async () => {
+              await Promise.all([
+                refetchReadingsData(),
+                refetchEarthquakesData(),
+              ]);
+            }}
+            colors={["#1a314c"]}
+            tintColor="#1a314c"
+          />
+        }
       >
         <View
           style={{
@@ -570,50 +637,97 @@ export default function Dashboard() {
           </View>
         </Card>
         <Card>
-          <View>
+          <View
+            style={{
+              gap: 4,
+              borderBottomColor: "#e5e5e5",
+              borderBottomWidth: 1,
+              paddingBottom: 16,
+            }}
+          >
             <Text style={styles.headerText}>Seismic Activity Monitor</Text>
-            <View style={{ marginTop: 14 }}>
-              {filteredReadings.length > 0 ? (
-                <View style={{ paddingHorizontal: 0 }}>
-                  <LineChart
-                    thickness={3}
-                    maxValue={
-                      Math.max(
-                        ...chartDataAverage.map((d) => d.value),
-                        ...chartDataMaximum.map((d) => d.value),
-                        ...chartDataMinimum.map((d) => d.value),
-                        1
-                      ) || 1
-                    }
-                    noOfSections={3}
-                    areaChart
-                    hideDataPoints
-                    data={chartDataAverage}
-                    data2={chartDataMaximum}
-                    data3={chartDataMinimum}
-                    color="#1a314c"
-                    color2="#ffcf5e"
-                    color3="#286892"
-                    curved
-                    startFillColor={"#ffffff"}
-                    endFillColor={"#ffffff"}
-                    startOpacity={0.4}
-                    endOpacity={0.4}
-                    spacing={32}
-                    initialSpacing={28}
-                    yAxisColor="#ffffff"
-                    xAxisColor="#ffffff"
-                    dataPointsHeight={12}
-                    dataPointsWidth={12}
-                    xAxisLabelTexts={chartDataAverage.map((d) => d.label)}
-                  />
-                </View>
-              ) : (
-                <Text style={{ color: "white", textAlign: "center" }}>
+            <Text style={styles.headerDescription}>
+              Seismic readings{" "}
+              {customDateRange?.startId
+                ? `for ${formatDate(customDateRange.startId)} - ${
+                    customDateRange.endId
+                      ? formatDate(customDateRange.endId)
+                      : ""
+                  }`
+                : "Select date range"}
+            </Text>
+            <Text style={styles.headerDescription}>
+              Data averaged every 5 minutes
+            </Text>
+          </View>
+
+          <View style={{ marginTop: 14 }}>
+            {readingsDataIsLoading || filteredReadings.length > 0 ? (
+              <View style={{ paddingHorizontal: 0 }}>
+                <LineChart
+                  thickness={3}
+                  maxValue={
+                    Math.max(
+                      ...chartDataAverage.map((d) => d.value),
+                      ...chartDataMaximum.map((d) => d.value),
+                      ...chartDataMinimum.map((d) => d.value),
+                      1
+                    ) || 1
+                  }
+                  noOfSections={3}
+                  areaChart
+                  hideDataPoints
+                  data={chartDataAverage}
+                  data2={chartDataMaximum}
+                  data3={chartDataMinimum}
+                  color={readingsDataIsLoading ? "#d1d5db" : "#1a314c"}
+                  color2={readingsDataIsLoading ? "#d1d5db" : "#ffcf5e"}
+                  color3={readingsDataIsLoading ? "#d1d5db" : "#286892"}
+                  curved
+                  startFillColor={"#ffffff"}
+                  endFillColor={"#ffffff"}
+                  startOpacity={0.4}
+                  endOpacity={0.4}
+                  spacing={46}
+                  hideRules
+                  initialSpacing={28}
+                  yAxisColor="#ffffff"
+                  xAxisColor="#ffffff"
+                  dataPointsHeight={12}
+                  dataPointsWidth={12}
+                  xAxisLabelTexts={chartDataAverage.map((d) => d.label)}
+                  xAxisLabelTextStyle={{
+                    color: "#212529",
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_400Regular",
+                      ios: "PlusJakartaSans-Regular",
+                    }),
+                  }}
+                  yAxisTextStyle={{
+                    color: "#565b60ff",
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_500Medium",
+                      ios: "PlusJakartaSans-Medium",
+                    }),
+                  }}
+                />
+              </View>
+            ) : (
+              <View style={{ height: 40, marginTop: 35 }}>
+                <Text
+                  style={{
+                    color: "#212529",
+                    textAlign: "center",
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_500Medium",
+                      ios: "PlusJakartaSans-Medium",
+                    }),
+                  }}
+                >
                   No data for selected range
                 </Text>
-              )}
-            </View>
+              </View>
+            )}
           </View>
         </Card>
         <Card variant="ai">
@@ -661,8 +775,147 @@ export default function Dashboard() {
           </View>
         </Card>
         <Card>
-          <View>
+          <View
+            style={{
+              gap: 4,
+              borderBottomColor: "#e5e5e5",
+              borderBottomWidth: 1,
+              paddingBottom: 16,
+            }}
+          >
             <Text style={styles.headerText}>Earthquake History</Text>
+            <Text style={styles.headerDescription}>
+              Historical earthquake events and intensity records over time
+            </Text>
+          </View>
+          <View style={{ marginTop: 14 }}>
+            {earthquakeDataIsLoading ? (
+              <View style={{ paddingHorizontal: 0 }}>
+                <LineChart
+                  thickness={3}
+                  maxValue={
+                    Math.max(...mockChartData.map((d) => d.value), 1) || 1
+                  }
+                  noOfSections={3}
+                  areaChart
+                  hideDataPoints
+                  data={mockChartData}
+                  color="#d1d5db"
+                  curved
+                  startFillColor={"#ffffff"}
+                  endFillColor={"#ffffff"}
+                  startOpacity={0.4}
+                  endOpacity={0.4}
+                  spacing={46}
+                  hideRules
+                  initialSpacing={28}
+                  yAxisColor="#ffffff"
+                  xAxisColor="#ffffff"
+                  dataPointsHeight={12}
+                  dataPointsWidth={12}
+                  xAxisLabelTexts={mockChartData.map((d) => d.label)}
+                  xAxisLabelTextStyle={{
+                    color: "#212529",
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_400Regular",
+                      ios: "PlusJakartaSans-Regular",
+                    }),
+                  }}
+                  yAxisTextStyle={{
+                    color: "#565b60ff",
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_500Medium",
+                      ios: "PlusJakartaSans-Medium",
+                    }),
+                  }}
+                />
+              </View>
+            ) : earthquakesData.data.length > 0 ? (
+              <View style={{ paddingHorizontal: 0 }}>
+                <LineChart
+                  thickness={3}
+                  maxValue={
+                    Math.max(
+                      ...((
+                        earthquakesData?.data as
+                          | { magnitude: number }[]
+                          | undefined
+                      )?.map((d: { magnitude: number }) => d.magnitude) || [1]),
+                      1
+                    ) || 1
+                  }
+                  noOfSections={3}
+                  areaChart
+                  hideDataPoints
+                  data={(
+                    (earthquakesData?.data as
+                      | { magnitude: number; createdAt: string }[]
+                      | undefined) || []
+                  ).map((quake: { magnitude: number; createdAt: string }) => ({
+                    value: quake.magnitude,
+                    label: new Date(quake.createdAt).toLocaleDateString(
+                      "en-US",
+                      {
+                        month: "2-digit",
+                        day: "2-digit",
+                      }
+                    ),
+                  }))}
+                  color={"#1a314c"}
+                  curved
+                  startFillColor={"#ffffff"}
+                  endFillColor={"#ffffff"}
+                  startOpacity={0.4}
+                  endOpacity={0.4}
+                  spacing={46}
+                  hideRules
+                  initialSpacing={28}
+                  yAxisColor="#ffffff"
+                  xAxisColor="#ffffff"
+                  dataPointsHeight={12}
+                  dataPointsWidth={12}
+                  xAxisLabelTexts={(
+                    (earthquakesData?.data as
+                      | { createdAt: string }[]
+                      | undefined) || []
+                  ).map((quake: { createdAt: string }) =>
+                    new Date(quake.createdAt).toLocaleDateString("en-US", {
+                      month: "2-digit",
+                      day: "2-digit",
+                    })
+                  )}
+                  xAxisLabelTextStyle={{
+                    color: "#212529",
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_400Regular",
+                      ios: "PlusJakartaSans-Regular",
+                    }),
+                  }}
+                  yAxisTextStyle={{
+                    color: "#565b60ff",
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_500Medium",
+                      ios: "PlusJakartaSans-Medium",
+                    }),
+                  }}
+                />
+              </View>
+            ) : (
+              <View style={{ height: 40, marginTop: 35 }}>
+                <Text
+                  style={{
+                    color: "#212529",
+                    textAlign: "center",
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_500Medium",
+                      ios: "PlusJakartaSans-Medium",
+                    }),
+                  }}
+                >
+                  No data for selected range
+                </Text>
+              </View>
+            )}
           </View>
         </Card>
       </ScrollView>
@@ -690,6 +943,14 @@ const styles = StyleSheet.create({
     fontFamily: Platform.select({
       android: "PlusJakartaSans_600SemiBold",
       ios: "PlusJakartaSans-SemiBold",
+    }),
+  },
+  headerDescription: {
+    fontSize: 14,
+    color: "#565b60ff",
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_400Regular",
+      ios: "PlusJakartaSans-Regular",
     }),
   },
   cardValue: {
