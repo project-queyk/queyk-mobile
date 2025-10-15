@@ -9,6 +9,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { View } from "react-native";
+import { PaperProvider } from "react-native-paper";
 import "react-native-reanimated";
 
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -25,6 +26,13 @@ export default function RootLayout() {
 
   const customLightTheme = {
     ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: backgroundColor,
+    },
+  };
+
+  const paperTheme = {
     colors: {
       ...DefaultTheme.colors,
       background: backgroundColor,
@@ -51,24 +59,26 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <View style={{ flex: 1, backgroundColor }}>
-          <ProtectedRoute>
-            <ThemeProvider
-              value={
-                colorScheme === "dark" ? customDarkTheme : customLightTheme
-              }
-            >
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="sign-in" />
-                <Stack.Screen name="(tabs)" />
-              </Stack>
-              <StatusBar style="dark" />
-            </ThemeProvider>
-          </ProtectedRoute>
-        </View>
-      </AuthProvider>
+      <PaperProvider theme={paperTheme}>
+        <AuthProvider>
+          <View style={{ flex: 1, backgroundColor }}>
+            <ProtectedRoute>
+              <ThemeProvider
+                value={
+                  colorScheme === "dark" ? customDarkTheme : customLightTheme
+                }
+              >
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="sign-in" />
+                  <Stack.Screen name="(tabs)" />
+                </Stack>
+                <StatusBar style="dark" />
+              </ThemeProvider>
+            </ProtectedRoute>
+          </View>
+        </AuthProvider>
+      </PaperProvider>
     </QueryClientProvider>
   );
 }
