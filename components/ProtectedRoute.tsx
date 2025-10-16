@@ -1,16 +1,13 @@
 import { useRouter, useSegments } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useThemeColor } from "@/hooks/use-theme-color";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, userData, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const backgroundColor = useThemeColor({}, "background");
-  const tintColor = useThemeColor({}, "tint");
 
   useEffect(() => {
     if (isLoading) return;
@@ -32,20 +29,27 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user, userData, segments, isLoading, router]);
 
-  if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor,
-        }}
-      >
-        <ActivityIndicator size="large" color={tintColor} />
-      </View>
-    );
-  }
+  useEffect(() => {
+    let mounted = true;
+
+    async function showOrHide() {
+      try {
+        if (isLoading) {
+          await SplashScreen.preventAutoHideAsync();
+        } else if (mounted) {
+          await SplashScreen.hideAsync();
+        }
+      } catch {}
+    }
+
+    showOrHide();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isLoading]);
+
+  if (isLoading) return null;
 
   return <>{children}</>;
 }
