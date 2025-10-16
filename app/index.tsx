@@ -29,12 +29,3 @@ export default function Index() {
 
   return <Redirect href="/(tabs)/evacuation-plan" />;
 }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     backgroundColor: "#f1f3f5",
-//   },
-// });
