@@ -551,13 +551,16 @@ export default function Dashboard() {
           }}
         >
           <TouchableOpacity
-            style={[styles.selectBox, { opacity: isOffline ? 0.7 : 1 }]}
+            style={[
+              styles.selectBox,
+              { opacity: earthquakeDataIsLoading || isOffline ? 0.7 : 1 },
+            ]}
             activeOpacity={0.9}
             onPress={() => {
               setIsDatePickerModalVisible(true);
             }}
-            aria-disabled={isOffline}
-            disabled={isOffline}
+            aria-disabled={earthquakeDataIsLoading || isOffline}
+            disabled={earthquakeDataIsLoading || isOffline}
           >
             <MaterialIcons
               name="calendar-today"
@@ -576,7 +579,10 @@ export default function Dashboard() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.button, { opacity: isOffline ? 0.7 : 1 }]}
+            style={[
+              styles.button,
+              { opacity: earthquakeDataIsLoading || isOffline ? 0.7 : 1 },
+            ]}
             activeOpacity={0.9}
             onPress={() =>
               downloadReport(
@@ -585,8 +591,8 @@ export default function Dashboard() {
                 customDateRange?.endId
               )
             }
-            aria-disabled={isOffline}
-            disabled={isOffline}
+            aria-disabled={earthquakeDataIsLoading || isOffline}
+            disabled={earthquakeDataIsLoading || isOffline}
           >
             <MaterialIcons
               name="description"
