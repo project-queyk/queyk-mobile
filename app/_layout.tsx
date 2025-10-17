@@ -1,7 +1,3 @@
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useThemeColor } from "@/hooks/use-theme-color";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import {
   DarkTheme,
@@ -15,7 +11,15 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { View } from "react-native";
 import { PaperProvider } from "react-native-paper";
+
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useThemeColor } from "@/hooks/use-theme-color";
+
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+
 const queryClient = new QueryClient();
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, "background");
@@ -57,9 +61,8 @@ export default function RootLayout() {
       });
 
       function handleDeepLink(url: string) {
-        if (isLoading) return; // Wait for auth state to load
+        if (isLoading) return;
         const { path } = Linking.parse(url);
-        // If not authenticated, always redirect to sign-in
         if (!userData) {
           router.push("/sign-in");
           return;
