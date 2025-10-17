@@ -1,50 +1,192 @@
-# Welcome to your Expo app 👋
+# Queyk Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An earthquake monitoring and emergency response system designed for educational institutions. Queyk provides seismic activity monitoring, safety protocols, and evacuation planning to help schools prepare for and respond to earthquakes.
 
-## Get started
+![queyk](https://queyk.vercel.app/og.png)
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+- 📊 **Earthquake Monitoring Dashboard** - Dashboard showing seismic activity data with hourly magnitude and frequency readings
+- 🚨 **Emergency Response Protocols** - Comprehensive safety guidelines based on NDRRMC and PHIVOLCS standards
+- 🗺️ **Evacuation Planning** - Interactive floor plans with marked emergency exits and assembly points
+- 🔐 **Secure Authentication** - School email-based login system
+- 📋 **User Manual** - Complete guide for system navigation and usage
+- ⚡ **Offline Capabilities** - Downloadable evacuation plans for use during emergencies
 
-2. Start the app
+## Tech Stack
 
-   ```bash
-   npx expo start
-   ```
+- **Framework:** [Expo](https://expo.dev) (React Native)
+- **Language:** TypeScript
+- **UI Components:** Custom and Expo components
+- **Authentication:** Google OAuth (school email)
+- **Database:** Supabase
+- **Data Standards:** NDRRMC, PHIVOLCS, RA 10121 compliance
 
-In the output, you'll find options to open the app in a
+## Dashboard Features
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Seismic Activity Monitoring
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **Activity Chart:** Hourly magnitude and frequency readings
+- **Peak Magnitude:** Highest seismic reading of the day
+- **Average Magnitude:** Daily average seismic activity level
+- **Significant Hours:** Hours with notable activity (>1.0 magnitude)
+- **Peak Activity:** Hour with most frequent seismic events
 
-## Get a fresh project
+### Safety Information
 
-When you're ready, run:
+- **Emergency Protocols:** Before, during, and after earthquake procedures
+- **Evacuation Sites:** Nearest evacuation location finder
+- **Safety Alerts:** Alerts for significant seismic activity
 
-```bash
-npm run reset-project
+## Project Structure
+
+```
+├── app/
+│   ├── (tabs)/
+│   │   ├── dashboard.tsx         # Seismic activity dashboard
+│   │   ├── protocols.tsx         # Emergency response protocols
+│   │   ├── evacuation-plan.tsx   # Building floor plans & exits
+│   │   ├── user-management.tsx   # User management
+│   │   └── profile.tsx           # User profile
+│   ├── sign-in.tsx               # Authentication screen
+│   └── _layout.tsx               # Root layout
+├── components/
+│   ├── ui/                       # UI components
+│   ├── Card.tsx                  # Card component
+│   └── haptic-tab.tsx            # Haptic tab navigation
+├── contexts/
+│   └── AuthContext.tsx           # Authentication context
+├── hooks/
+│   └── use-network-status.ts     # Network status hook
+├── utils/
+│   ├── auth.ts                   # Auth helpers
+│   ├── floors.ts                 # Floor plan helpers
+│   └── protocols.ts              # Emergency protocol data
+├── assets/
+│   └── images/                   # Floor plans, icons
+├── config/
+│   └── auth.config.ts            # Auth configuration
+└── constants/
+    └── theme.ts                  # Theme constants
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Getting Started
 
-## Learn more
+### Prerequisites
 
-To learn more about developing your project with Expo, look at the following resources:
+- Node.js 18+
+- Android Studio or Xcode (for emulators/simulators)
+- npm, yarn, pnpm, or bun
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Installation
 
-## Join the community
+1. Clone the repository:
 
-Join our community of developers creating universal apps.
+```bash
+git clone <repository-url>
+cd queyk-mobile
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+2. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+# or
+bun install
+```
+
+3. Set up environment variables (if needed):
+
+```bash
+cp .env.example .env
+```
+
+4. Configure authentication and API keys in `.env`
+
+### Development
+
+Run the Expo development server:
+
+```bash
+npx expo start
+```
+
+Open the app in:
+
+- [Expo Go](https://expo.dev/go) on your mobile device
+- Android emulator
+- iOS simulator
+- [Development build](https://docs.expo.dev/develop/development-builds/introduction/)
+
+## Usage Guide
+
+### Authentication
+
+- Access the system using your school email credentials
+- Login through Google OAuth on the sign-in screen
+- Protected routes ensure secure access to monitoring data
+
+### Dashboard Navigation
+
+- **Dashboard:** View seismic activity data and key metrics
+- **Protocols:** Access emergency response procedures
+- **Evacuation Plan:** View building floor plans and emergency exits
+- **User Management:** Manage users and permissions
+- **Profile:** View and edit user profile
+
+### Emergency Features
+
+- **Activity Monitoring:** Track seismic events and patterns
+- **Offline Access:** Download evacuation plans for emergency use
+- **Mobile Support:** Full functionality on mobile devices during emergencies
+
+## Safety Standards Compliance
+
+This system follows guidelines from:
+
+- **NDRRMC** (National Disaster Risk Reduction and Management Council)
+- **PHIVOLCS** (Philippine Institute of Volcanology and Seismology)
+- **RA 10121** (Philippine Disaster Risk Reduction and Management Act)
+
+## Deployment
+
+### Build for Production
+
+```bash
+npx expo run:android   # Build and run on Android
+npx expo run:ios       # Build and run on iOS
+```
+
+See [Expo documentation](https://docs.expo.dev/) for more deployment options.
+
+## Contributing
+
+We welcome contributions to improve earthquake monitoring and safety features:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/safety-improvement`)
+3. Commit your changes (`git commit -m 'Add enhanced alert system'`)
+4. Push to the branch (`git push origin feature/safety-improvement`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support & Emergency Contact
+
+For system support or emergency procedures:
+
+- Open an issue on GitHub for technical problems
+- Contact your school's emergency coordinator for safety protocols
+- Follow official NDRRMC guidelines during actual emergencies
+
+---
+
+**⚠️ Important:** This system is designed to supplement, not replace, official emergency protocols. Always follow your institution's established emergency procedures during actual seismic events.
+
+© 2025 Queyk Project - All Rights Reserved
