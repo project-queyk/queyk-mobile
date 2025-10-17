@@ -857,19 +857,72 @@ export default function Dashboard() {
           </MaskedView>
           <View>
             {readingsDataIsLoading ? (
-              <View style={{ gap: 8, marginTop: 2 }}>
-                <View style={[styles.aiSkeleton, { width: "100%" }]} />
-                <View style={[styles.aiSkeleton, { width: "75%" }]} />
-                <View style={[styles.aiSkeleton, { width: "50%" }]} />
+              <View style={{ gap: 8, marginTop: 2, marginBottom: 14 }}>
+                <LinearGradient
+                  colors={[
+                    "rgba(255,255,255,0.98)",
+                    "#eef6ff",
+                    "rgba(255,255,255,0.98)",
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[
+                    styles.aiSkeleton,
+                    {
+                      width: "100%",
+                    },
+                  ]}
+                />
+                <LinearGradient
+                  colors={[
+                    "rgba(255,255,255,0.98)",
+                    "#e6f0ff",
+                    "rgba(255,255,255,0.98)",
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[
+                    styles.aiSkeleton,
+                    {
+                      width: "75%",
+                    },
+                  ]}
+                />
+                <LinearGradient
+                  colors={[
+                    "rgba(255,255,255,0.98)",
+                    "#dde9fb",
+                    "rgba(255,255,255,0.98)",
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[
+                    styles.aiSkeleton,
+                    {
+                      width: "50%",
+                    },
+                  ]}
+                />
               </View>
             ) : (
-              <Text style={styles.aiSummaryText}>
+              <Text
+                style={[
+                  styles.aiSummaryText,
+                  {
+                    marginBottom:
+                      !formatSeismicMonitorDateFromFlash(dateRange) ||
+                      !aiSummary
+                        ? 10
+                        : 0,
+                  },
+                ]}
+              >
                 {formatSeismicMonitorDateFromFlash(dateRange) && aiSummary
                   ? aiSummary
                   : "No AI summary available for the selected period"}
               </Text>
             )}
-            <Text style={[styles.cardValueSubText, { marginTop: -8 }]}>
+            <Text style={styles.cardValueSubText}>
               AI-generated analysis of seismic activity patterns
             </Text>
           </View>
@@ -1107,7 +1160,6 @@ const styles = StyleSheet.create({
   cardValueSubText: {
     color: "#565b60ff",
     fontSize: 12,
-    marginTop: 4,
     fontFamily: Platform.select({
       android: "PlusJakartaSans_400Regular",
       ios: "PlusJakartaSans-Regular",
@@ -1178,7 +1230,9 @@ const styles = StyleSheet.create({
   },
   aiSkeleton: {
     height: 16,
-    backgroundColor: "#d1d5db",
-    borderRadius: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
+    backgroundColor: "rgba(255,255,255,0.98)",
   },
 });
