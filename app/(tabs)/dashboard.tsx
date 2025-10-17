@@ -476,11 +476,12 @@ export default function Dashboard() {
       );
 
       const dateNow = new Date();
-      const timestamp = dateNow
-        .toISOString()
-        .replace("T", "_")
-        .replace(/:/g, "-")
-        .split(".")[0];
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const timestamp = `${dateNow.getFullYear()}-${pad(
+        dateNow.getMonth() + 1
+      )}-${pad(dateNow.getDate())}_${pad(dateNow.getHours())}-${pad(
+        dateNow.getMinutes()
+      )}-${pad(dateNow.getSeconds())}`;
 
       const filename =
         startDate && endDate
