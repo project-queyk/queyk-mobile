@@ -1010,7 +1010,7 @@ export default function Dashboard() {
                   }}
                 />
               </View>
-            ) : earthquakesData.data.length > 0 ? (
+            ) : earthquakesData?.data.length > 0 ? (
               <View style={{ paddingHorizontal: 0 }}>
                 <LineChart
                   thickness={3}
