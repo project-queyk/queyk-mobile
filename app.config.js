@@ -28,6 +28,23 @@ module.exports = {
       package: "com.luiscabantac.Queyk",
       googleServicesFile:
         process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "https",
+              host: "queyk.com",
+            },
+            {
+              scheme: "https",
+              host: "www.queyk.com",
+            },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+      ],
     },
     web: {
       output: "static",
