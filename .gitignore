@@ -45,3 +45,6 @@ app-example
 # Firebase
 google-services.json
 GoogleService-Info.plist
+
+# Public
+/public/.well-known
