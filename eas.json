@@ -9,8 +9,7 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "buildType": "app-bundle"
+      "distribution": "store"
     },
     "production": {
       "autoIncrement": true
