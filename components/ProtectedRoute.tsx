@@ -1,6 +1,7 @@
 import { useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { BackHandler, Platform } from "react-native";
 
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -13,6 +14,19 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === "(tabs)";
+    const isDashboard = segments[1] === "dashboard";
+
+    let backHandler: any;
+    if (
+      Platform.OS === "android" &&
+      userData?.role === "user" &&
+      segments[1] === "evacuation-plan"
+    ) {
+      backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+        BackHandler.exitApp();
+        return true;
+      });
+    }
 
     if (!user) {
       if (inAuthGroup || segments[0] !== "sign-in") {
@@ -25,8 +39,13 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         } else {
           router.replace("/(tabs)/evacuation-plan");
         }
+      } else if (userData?.role === "user" && isDashboard) {
+        router.replace("/(tabs)/evacuation-plan");
       }
     }
+    return () => {
+      if (backHandler) backHandler.remove();
+    };
   }, [user, userData, segments, isLoading, router]);
 
   useEffect(() => {
