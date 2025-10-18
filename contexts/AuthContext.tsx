@@ -15,8 +15,13 @@ import {
   isValidEmailDomain,
   UserData,
 } from "@/config/auth.config";
+
 import { fetchLatestUserData, signInToBackend } from "@/utils/auth";
 import { isConnected, subscribeToNetworkChanges } from "@/utils/network";
+import {
+  requestPushNotificationPermissions,
+  updatePushTokenInBackend,
+} from "@/utils/pushNotifications";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -174,9 +179,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           USERDATA_KEY,
           JSON.stringify(backendResponse.data)
         );
+
+        try {
+          const notifResult = await requestPushNotificationPermissions();
+          if (notifResult.granted && notifResult.token) {
+            await updatePushTokenInBackend(
+              backendResponse.data.id,
+              notifResult.token,
+              process.env.EXPO_PUBLIC_AUTH_TOKEN as string
+            );
+          }
+        } catch {}
       } catch (error) {
         await GoogleSignin.signOut();
-
         throw error;
       }
     }
