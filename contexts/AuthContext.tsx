@@ -8,6 +8,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import { AppState } from "react-native";
 
 import {
   AuthContextType,
@@ -34,13 +35,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
 
+  const signOut = useCallback(async () => {
+    try {
+      await GoogleSignin.signOut();
+    } catch {}
+
+    try {
+      await SecureStore.deleteItemAsync(USER_KEY);
+      await SecureStore.deleteItemAsync(USERDATA_KEY);
+    } catch {}
+
+    setUser(null);
+    setUserData(null);
+  }, []);
+
   async function checkInitialNetworkState() {
     const connected = await isConnected();
     setIsOnline(connected);
   }
 
   const lastRefreshRef = React.useRef<number>(0);
-  const REFRESH_INTERVAL = 60 * 1000;
+  const REFRESH_INTERVAL = __DEV__ ? 10 * 1000 : 60 * 1000;
   const refreshUserDataSilently = useCallback(async () => {
     if (!userData) return;
     const now = Date.now();
@@ -50,17 +65,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     lastRefreshRef.current = now;
     try {
       const latestUserData = await fetchLatestUserData(userData);
-      if (latestUserData && latestUserData !== userData) {
+
+      if (!latestUserData) {
+        try {
+          await signOut();
+        } catch {}
+        return;
+      }
+
+      if (JSON.stringify(latestUserData) !== JSON.stringify(userData)) {
         setUserData(latestUserData);
         await SecureStore.setItemAsync(
           USERDATA_KEY,
           JSON.stringify(latestUserData)
         );
       }
-    } catch (error) {
-      console.log("Silent refresh failed:", error);
-    }
-  }, [userData, REFRESH_INTERVAL]);
+    } catch {}
+  }, [userData, REFRESH_INTERVAL, signOut]);
 
   useEffect(() => {
     loadUserFromStorage();
@@ -81,6 +102,86 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       unsubscribe();
     };
   }, [userData, isLoading, refreshUserDataSilently]);
+
+  useEffect(() => {
+    if (!userData) return;
+    let mounted = true;
+
+    const interval = setInterval(() => {
+      if (!mounted) return;
+      if (isOnline && !isLoading) {
+        refreshUserDataSilently();
+      }
+    }, REFRESH_INTERVAL);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [
+    userData,
+    isOnline,
+    isLoading,
+    refreshUserDataSilently,
+    REFRESH_INTERVAL,
+  ]);
+
+  useEffect(() => {
+    const handler = (nextAppState: string) => {
+      if (nextAppState === "active" && userData && isOnline && !isLoading) {
+        refreshUserDataSilently();
+      }
+    };
+
+    const subscription = AppState.addEventListener("change", handler);
+
+    return () => {
+      try {
+        subscription.remove();
+      } catch {}
+    };
+  }, [userData, isOnline, isLoading, refreshUserDataSilently]);
+
+  useEffect(() => {
+    const originalFetch = (global as any).fetch;
+
+    (global as any).fetch = async (input: RequestInfo, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input?.toString() || "";
+      const method = (init && init.method) || "GET";
+
+      const response = await originalFetch(input, init);
+
+      try {
+        if (
+          userData &&
+          method.toUpperCase() === "GET" &&
+          url.includes(`/v1/api/users/${userData.id}`)
+        ) {
+          if (response.status === 404 || response.status === 204) {
+            await signOut();
+          } else if (response.ok) {
+            const contentType = response.headers.get("content-type") || "";
+            if (contentType.includes("application/json")) {
+              const json = await response
+                .clone()
+                .json()
+                .catch(() => null);
+              const body = json?.data ?? json;
+              if (body == null) {
+                await signOut();
+              }
+            }
+          }
+        }
+      } catch {}
+
+      return response;
+    };
+
+    return () => {
+      (global as any).fetch = originalFetch;
+    };
+  }, [userData, signOut]);
 
   async function loadUserFromStorage() {
     try {
@@ -164,7 +265,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userEmail = userInfo.data.user.email;
 
       if (!isValidEmailDomain(userEmail)) {
-        await GoogleSignin.signOut();
+        await signOut();
         throw new Error(getDomainRestrictionMessage(userEmail));
       }
 
@@ -191,20 +292,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         } catch {}
       } catch (error) {
-        await GoogleSignin.signOut();
+        try {
+          await signOut();
+        } catch {}
         throw error;
       }
-    }
-  }
-
-  async function signOut() {
-    try {
-      await GoogleSignin.signOut();
-      setUser(null);
-      await SecureStore.deleteItemAsync(USER_KEY);
-      await SecureStore.deleteItemAsync(USERDATA_KEY);
-    } catch (error) {
-      throw error;
     }
   }
 

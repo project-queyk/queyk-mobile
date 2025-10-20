@@ -26,11 +26,59 @@ export async function fetchLatestUserData(
     );
 
     if (!response.ok) {
+      if (
+        response.status === 404 ||
+        response.status === 410 ||
+        response.status === 401 ||
+        response.status === 403 ||
+        response.status === 204
+      ) {
+        return null;
+      }
+
+      try {
+        const errorBody = await response.json();
+        const msg =
+          (errorBody && (errorBody.message || errorBody.error || "") + "") ||
+          "";
+        const lowered = msg.toLowerCase();
+        if (
+          lowered.includes("not found") ||
+          lowered.includes("not exist") ||
+          lowered.includes("deleted") ||
+          lowered.includes("no such user")
+        ) {
+          return null;
+        }
+      } catch {}
+
       return userData;
     }
 
+    if (response.status === 204) return null;
+
     const data = await response.json();
-    return data.data || data;
+
+    if (data == null) return null;
+    if (Object.prototype.hasOwnProperty.call(data, "data")) {
+      if (data.data == null) return null;
+      return data.data;
+    }
+
+    try {
+      const msg = (data && (data.message || data.error || "") + "") || "";
+      const lowered = msg.toLowerCase();
+      if (
+        lowered.includes("not found") ||
+        lowered.includes("not exist") ||
+        lowered.includes("deleted") ||
+        lowered.includes("no such user")
+      ) {
+        return null;
+      }
+    } catch {}
+
+    return data;
   } catch {
     return userData;
   }
