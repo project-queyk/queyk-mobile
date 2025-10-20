@@ -91,6 +91,13 @@ module.exports = {
       ],
       "expo-secure-store",
       "expo-font",
+      [
+        "expo-location",
+        {
+          locationAlwaysAndWhenInUsePermission:
+            "Allow Queyk to use your location.",
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,
