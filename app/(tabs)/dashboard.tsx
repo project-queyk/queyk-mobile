@@ -426,14 +426,25 @@ export default function Dashboard() {
     label: `10/${i + 1}/2025`,
   }));
 
+  const isSingleDay =
+    !!customDateRange?.startId &&
+    !!customDateRange?.endId &&
+    customDateRange.startId === customDateRange.endId;
+
   const chartDataAverage = readingsDataIsLoading
     ? mockChartData
     : filteredReadings.map((reading) => ({
         value: reading.siAverage,
-        label: new Date(reading.createdAt).toLocaleDateString("en-US", {
-          month: "2-digit",
-          day: "2-digit",
-        }),
+        label: isSingleDay
+          ? new Date(reading.createdAt).toLocaleTimeString("en-GB", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            })
+          : new Date(reading.createdAt).toLocaleDateString("en-US", {
+              month: "2-digit",
+              day: "2-digit",
+            }),
       }));
 
   const chartDataMaximum = readingsDataIsLoading
@@ -738,12 +749,12 @@ export default function Dashboard() {
             <Text style={styles.headerText}>Seismic Activity Monitor</Text>
             <Text style={styles.headerDescription}>
               Seismic readings{" "}
-              {customDateRange?.startId
-                ? `for ${formatDate(customDateRange.startId)} - ${
-                    customDateRange.endId
-                      ? formatDate(customDateRange.endId)
-                      : ""
-                  }`
+              {customDateRange?.startId && customDateRange?.endId
+                ? customDateRange.startId === customDateRange.endId
+                  ? `for ${formatDate(customDateRange.startId)}`
+                  : `for ${formatDate(customDateRange.startId)} - ${formatDate(
+                      customDateRange.endId
+                    )}`
                 : "Select date range"}
             </Text>
             <Text style={styles.headerDescription}>
