@@ -254,20 +254,22 @@ export default function Profile() {
               style={styles.profileImage}
               contentFit="contain"
             />
-            <Text
-              style={styles.profileName}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {accountData.name}
-            </Text>
-            <Text
-              style={styles.profileEmail}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {accountData.email}
-            </Text>
+            <View>
+              <Text
+                style={styles.profileName}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {accountData.name}
+              </Text>
+              <Text
+                style={styles.profileEmail}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {accountData.email}
+              </Text>
+            </View>
           </View>
         </Card>
       )}
@@ -355,10 +357,9 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   cardTitle: {
-    flexDirection: "column",
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   cardContent: {
     gap: 8,
