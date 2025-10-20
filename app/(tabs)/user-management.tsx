@@ -74,20 +74,30 @@ function EditUserModal({
               activeOpacity={0.9}
               onPress={() => user && onToggleEmailNotificationAlert(user)}
             >
+              <View
+                style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
+              >
+                <MaterialIcons
+                  name={
+                    user?.alertNotification
+                      ? "notifications-off"
+                      : "notifications"
+                  }
+                  size={16}
+                  color="#212529"
+                  style={{ marginTop: 1 }}
+                />
+                <Text style={styles.selectText}>
+                  {user?.alertNotification ? "Disable" : "Enable"} email alert
+                  notifications
+                </Text>
+              </View>
               <MaterialIcons
-                name={
-                  user?.alertNotification
-                    ? "notifications-off"
-                    : "notifications"
-                }
+                name="chevron-right"
                 size={16}
                 color="#212529"
                 style={{ marginTop: 1 }}
               />
-              <Text style={styles.selectText}>
-                {user?.alertNotification ? "Disable" : "Enable"} email alert
-                notifications
-              </Text>
             </TouchableOpacity>
           </View>
           <View style={{ marginBottom: 20 }}>
@@ -97,15 +107,25 @@ function EditUserModal({
               activeOpacity={0.9}
               onPress={() => user && onToggleUserRole(user)}
             >
+              <View
+                style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
+              >
+                <MaterialIcons
+                  name={user?.role === "admin" ? "person" : "verified-user"}
+                  size={16}
+                  color="#212529"
+                  style={{ marginTop: 1 }}
+                />
+                <Text style={styles.selectText}>
+                  Switch to {user?.role === "user" ? "Admin" : "User"}
+                </Text>
+              </View>
               <MaterialIcons
-                name={user?.role === "admin" ? "person" : "verified-user"}
+                name="chevron-right"
                 size={16}
                 color="#212529"
                 style={{ marginTop: 1 }}
               />
-              <Text style={styles.selectText}>
-                Switch to {user?.role === "user" ? "Admin" : "User"}
-              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -672,6 +692,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
+    justifyContent: "space-between",
   },
   selectText: {
     fontFamily: Platform.select({

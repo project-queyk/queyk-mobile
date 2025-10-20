@@ -121,19 +121,29 @@ function DatePickerModal({
               activeOpacity={0.9}
               onPress={() => setShowStartPicker(true)}
             >
+              <View
+                style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
+              >
+                <MaterialIcons
+                  name="calendar-today"
+                  size={16}
+                  color="#212529"
+                  style={{ marginTop: 1 }}
+                />
+                <Text style={styles.selectText}>
+                  {startDate.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "2-digit",
+                    year: "numeric",
+                  })}
+                </Text>
+              </View>
               <MaterialIcons
-                name="calendar-today"
+                name="chevron-right"
                 size={16}
                 color="#212529"
                 style={{ marginTop: 1 }}
               />
-              <Text style={styles.selectText}>
-                {startDate.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "2-digit",
-                  year: "numeric",
-                })}
-              </Text>
             </TouchableOpacity>
           </View>
           <View style={{ marginBottom: 20 }}>
@@ -143,19 +153,29 @@ function DatePickerModal({
               onPress={() => setShowEndPicker(true)}
               activeOpacity={0.9}
             >
+              <View
+                style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
+              >
+                <MaterialIcons
+                  name="calendar-today"
+                  size={16}
+                  color="#212529"
+                  style={{ marginTop: 1 }}
+                />
+                <Text style={styles.selectText}>
+                  {endDate.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "2-digit",
+                    year: "numeric",
+                  })}
+                </Text>
+              </View>
               <MaterialIcons
-                name="calendar-today"
+                name="chevron-right"
                 size={16}
                 color="#212529"
                 style={{ marginTop: 1 }}
               />
-              <Text style={styles.selectText}>
-                {endDate.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "2-digit",
-                  year: "numeric",
-                })}
-              </Text>
             </TouchableOpacity>
           </View>
 
@@ -574,21 +594,25 @@ export default function Dashboard() {
             aria-disabled={earthquakeDataIsLoading || isOffline}
             disabled={earthquakeDataIsLoading || isOffline}
           >
-            <MaterialIcons
-              name="calendar-today"
-              size={16}
-              color="#212529"
-              style={{ marginTop: 1 }}
-            />
-            <Text style={styles.selectText}>
-              {customDateRange?.startId
-                ? `${formatDate(customDateRange.startId)} - ${
-                    customDateRange.endId
-                      ? formatDate(customDateRange.endId)
-                      : "Select end date"
-                  }`
-                : "Select date range"}
-            </Text>
+            <View
+              style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
+            >
+              <MaterialIcons
+                name="calendar-today"
+                size={16}
+                color="#212529"
+                style={{ marginTop: 1 }}
+              />
+              <Text style={styles.selectText}>
+                {customDateRange?.startId
+                  ? `${formatDate(customDateRange.startId)} - ${
+                      customDateRange.endId
+                        ? formatDate(customDateRange.endId)
+                        : "Select end date"
+                    }`
+                  : "Select date range"}
+              </Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -1224,6 +1248,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
+    justifyContent: "space-between",
   },
   selectText: {
     fontFamily: Platform.select({
