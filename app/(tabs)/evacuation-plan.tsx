@@ -157,7 +157,7 @@ export default function EvacuationPlan() {
             />
           </View>
         </Card>
-        <View style={{ marginBottom: 12 }}>
+        <View>
           <Card>
             <View
               style={{
