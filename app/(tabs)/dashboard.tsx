@@ -803,7 +803,7 @@ export default function Dashboard() {
                 />
               </View>
             ) : (
-              <View style={{ height: 40, marginTop: 35 }}>
+              <View style={{ height: 142, marginTop: 92 }}>
                 <Text
                   style={{
                     color: "#212529",
@@ -1081,7 +1081,7 @@ export default function Dashboard() {
                 />
               </View>
             ) : (
-              <View style={{ height: 40, marginTop: 35 }}>
+              <View style={{ height: 142, marginTop: 92 }}>
                 <Text
                   style={{
                     color: "#212529",
