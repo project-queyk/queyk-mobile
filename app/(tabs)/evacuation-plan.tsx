@@ -1,10 +1,14 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as FileSystem from "expo-file-system/legacy";
 import { Image } from "expo-image";
+import * as Location from "expo-location";
+import * as SecureStore from "expo-secure-store";
 import * as Sharing from "expo-sharing";
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -16,6 +20,8 @@ import { Dropdown } from "react-native-element-dropdown";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useNetworkStatus } from "@/hooks/use-network-status";
+import useRealTimeAltitude from "@/hooks/use-realtime-altitude";
+import type { Floor } from "@/utils/floors";
 import { floors } from "@/utils/floors";
 import { safetyGuidelines } from "@/utils/safety-guidelines";
 
@@ -23,11 +29,14 @@ import Card from "@/components/Card";
 
 export default function EvacuationPlan() {
   const { isOffline } = useNetworkStatus();
-  const [selectedFloor, setSelectedFloor] = useState("gymnasium");
+  const [selectedFloor, setSelectedFloor] = useState<string>(
+    floors[0]?.value ?? ""
+  );
   const [isFocus, setIsFocus] = useState(false);
+  const [isDynamic, setIsDynamic] = useState(false);
 
-  const currentFloor =
-    floors.find((floor) => floor.value === selectedFloor) || floors[0];
+  const currentFloor: Floor =
+    floors.find((floor) => floor.value === selectedFloor) ?? floors[0];
 
   async function downloadEvacuationPlan() {
     try {
@@ -54,14 +63,453 @@ export default function EvacuationPlan() {
           `Evacuation plan downloaded successfully!`
         );
       }
-    } catch (error) {
-      console.error("Error downloading evacuation plan:", error);
+    } catch {
       Alert.alert(
         "Download Error",
         "Failed to download the evacuation plan. Please check your internet connection and try again."
       );
     }
   }
+
+  const {
+    altitude,
+    altitudeAccuracy,
+    latitude,
+    longitude,
+    requestPermission,
+    stopPermission,
+    ensureWatcherStarted,
+  } = useRealTimeAltitude({
+    timeInterval: 1000,
+    enabled: isDynamic,
+  });
+
+  const [awaitingAltitude, setAwaitingAltitude] = useState(false);
+  const [altitudeError, setAltitudeError] = useState<
+    null | "permissionDenied" | "unavailable"
+  >(null);
+  const [isInsideBuilding, setIsInsideBuilding] = useState<boolean | null>(
+    null
+  );
+  const altitudeTimeoutRef = useRef<number | null>(null);
+  const altitudeStateRef = useRef<number | null>(altitude);
+  const startAttemptRef = useRef(0);
+
+  const clearAwaitingTimeout = useCallback(() => {
+    if (altitudeTimeoutRef.current != null) {
+      try {
+        clearTimeout(altitudeTimeoutRef.current as unknown as number);
+      } catch {}
+      altitudeTimeoutRef.current = null;
+    }
+  }, []);
+
+  const startAwaitingAltitude = useCallback(
+    (
+      durationMs: number = 10000,
+      revertOnTimeout: boolean = false,
+      setErrorOnTimeout: boolean = true
+    ) => {
+      clearAwaitingTimeout();
+      setAwaitingAltitude(true);
+
+      startAttemptRef.current += 1;
+      const myAttemptId = startAttemptRef.current;
+      altitudeTimeoutRef.current = setTimeout(() => {
+        altitudeTimeoutRef.current = null;
+
+        if (altitudeStateRef.current == null) {
+          if (setErrorOnTimeout) setAltitudeError("unavailable");
+          setAwaitingAltitude(false);
+          if (revertOnTimeout && myAttemptId === startAttemptRef.current) {
+            setIsDynamic(false);
+          }
+        }
+      }, durationMs) as unknown as number;
+      return myAttemptId;
+    },
+    [clearAwaitingTimeout]
+  );
+
+  const cancelAwaiting = useCallback(() => {
+    startAttemptRef.current += 1;
+    try {
+      clearAwaitingTimeout();
+    } catch {}
+    try {
+      stopPermission?.();
+    } catch {}
+    setAwaitingAltitude(false);
+    setAltitudeError(null);
+    setIsDynamic(false);
+  }, [clearAwaitingTimeout, stopPermission]);
+  useEffect(() => {
+    altitudeStateRef.current = altitude;
+    if (altitude != null) {
+      setAwaitingAltitude(false);
+      setAltitudeError(null);
+      if (altitudeTimeoutRef.current != null) {
+        clearTimeout(altitudeTimeoutRef.current as unknown as number);
+        altitudeTimeoutRef.current = null;
+      }
+    }
+  }, [altitude]);
+
+  function handleRetry() {
+    (async () => {
+      setAltitudeError(null);
+      startAwaitingAltitude(4000, false);
+      try {
+        const res = await ensureWatcherStarted?.({
+          promptIfNeeded: false,
+          attempts: isOffline ? 4 : 2,
+          waitForAltitudeMs: isOffline ? 14000 : 4000,
+        });
+        clearAwaitingTimeout();
+        if (!res?.success) {
+          if (res?.permission && res.permission.status !== "granted") {
+            setAltitudeError("permissionDenied");
+            setAwaitingAltitude(false);
+            return;
+          }
+          setAltitudeError("unavailable");
+          setAwaitingAltitude(false);
+          return;
+        }
+      } catch {
+        try {
+          await requestPermission?.();
+        } catch {}
+        try {
+          clearAwaitingTimeout();
+        } catch {}
+        setAwaitingAltitude(false);
+      }
+    })();
+  }
+
+  const buildingPolygon = useMemo(
+    () => [
+      { lat: 14.7675598, lon: 121.0797802 },
+      { lat: 14.7678183, lon: 121.0797498 },
+      { lat: 14.7679425, lon: 121.079625 },
+      { lat: 14.7680478, lon: 121.0796791 },
+    ],
+    []
+  );
+
+  function pointInPolygon(
+    point: { lat: number; lon: number },
+    polygon: { lat: number; lon: number }[]
+  ) {
+    const x = point.lon;
+    const y = point.lat;
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i].lon;
+      const yi = polygon[i].lat;
+      const xj = polygon[j].lon;
+      const yj = polygon[j].lat;
+      const intersect =
+        yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  useEffect(() => {
+    if (!isDynamic) {
+      setIsInsideBuilding(null);
+      return;
+    }
+    if (latitude == null || longitude == null) {
+      setIsInsideBuilding(null);
+      return;
+    }
+    try {
+      const inside = pointInPolygon(
+        { lat: latitude, lon: longitude },
+        buildingPolygon
+      );
+      setIsInsideBuilding(inside);
+    } catch {
+      setIsInsideBuilding(null);
+    }
+  }, [isDynamic, latitude, longitude, buildingPolygon]);
+
+  useEffect(() => {
+    if (!isDynamic) return;
+    if (isInsideBuilding === false) return;
+    if (altitude == null) return;
+
+    const floorsWithAlt = floors
+      .filter(
+        (f): f is Floor & { altitude: number } => typeof f.altitude === "number"
+      )
+      .slice()
+      .sort((a, b) => a.altitude - b.altitude);
+    if (!floorsWithAlt.length) return;
+
+    if (altitude < floorsWithAlt[0].altitude) {
+      const candidate = floorsWithAlt[0].value;
+      if (candidate !== selectedFloor) setSelectedFloor(candidate);
+      return;
+    }
+
+    const found = floorsWithAlt.slice(0, -1).find((cur, i) => {
+      const next = floorsWithAlt[i + 1];
+      return altitude >= cur.altitude && altitude < next.altitude;
+    });
+    const chosen = found
+      ? found.value
+      : floorsWithAlt[floorsWithAlt.length - 1].value;
+
+    if (chosen !== selectedFloor) {
+      setSelectedFloor(chosen);
+    }
+  }, [isDynamic, altitude, altitudeAccuracy, selectedFloor, isInsideBuilding]);
+
+  async function toggleDynamicFloorPlan() {
+    const enabling = !isDynamic;
+
+    if (!enabling) {
+      try {
+        stopPermission?.();
+      } catch {}
+
+      try {
+        clearAwaitingTimeout();
+      } catch {}
+      setAwaitingAltitude(false);
+      setAltitudeError(null);
+      setIsDynamic(false);
+      try {
+        await SecureStore.setItemAsync("DYNAMIC_FLOOR_PLAN_ENABLED", "false");
+      } catch {}
+      return;
+    }
+
+    try {
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled) {
+        Alert.alert(
+          "Location services disabled",
+          "Your device Location services are turned off. Please enable them to use the dynamic floor plan.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: () => {
+                try {
+                  Linking.openSettings();
+                } catch {}
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      const current = await Location.getForegroundPermissionsAsync();
+
+      setAltitudeError(null);
+      startAwaitingAltitude(4000, true);
+      setIsDynamic(true);
+
+      if (current.status === "granted") {
+        try {
+          const result = await ensureWatcherStarted?.({
+            promptIfNeeded: false,
+            attempts: isOffline ? 4 : 2,
+            waitForAltitudeMs: isOffline ? 14000 : 4000,
+          });
+          clearAwaitingTimeout();
+          if (result?.success) {
+            try {
+              await SecureStore.setItemAsync(
+                "DYNAMIC_FLOOR_PLAN_ENABLED",
+                "true"
+              );
+            } catch {}
+            return;
+          }
+
+          if (result?.permission && result.permission.status !== "granted") {
+            setAltitudeError("permissionDenied");
+          } else {
+            setAltitudeError("unavailable");
+          }
+          setAwaitingAltitude(false);
+          setIsDynamic(false);
+          return;
+        } catch {
+          clearAwaitingTimeout();
+          setAwaitingAltitude(false);
+          setIsDynamic(false);
+        }
+      }
+
+      Alert.alert(
+        "Enable Location",
+        "Allow this app to access your device location so we can show a dynamic floor plan based on your altitude.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Continue",
+            onPress: async () => {
+              try {
+                setAltitudeError(null);
+                startAwaitingAltitude(4000, true);
+                setIsDynamic(true);
+                const result = await ensureWatcherStarted?.({
+                  promptIfNeeded: true,
+                  attempts: isOffline ? 4 : 2,
+                  waitForAltitudeMs: isOffline ? 14000 : 4000,
+                });
+                clearAwaitingTimeout();
+                if (result?.success) {
+                  try {
+                    await SecureStore.setItemAsync(
+                      "DYNAMIC_FLOOR_PLAN_ENABLED",
+                      "true"
+                    );
+                  } catch {}
+                  return;
+                }
+
+                setAwaitingAltitude(false);
+                setIsDynamic(false);
+
+                const currentAfter =
+                  await Location.getForegroundPermissionsAsync();
+                if (currentAfter.canAskAgain === false) {
+                  setAltitudeError("permissionDenied");
+                  Alert.alert(
+                    "Location permission needed",
+                    "To show a live dynamic floor plan the app needs Location access. Please enable it in your device settings.",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Open Settings",
+                        onPress: () => {
+                          try {
+                            Linking.openSettings();
+                          } catch {}
+                        },
+                      },
+                    ]
+                  );
+                } else {
+                  setAltitudeError("permissionDenied");
+                  Alert.alert(
+                    "Permission denied",
+                    "Location permission was denied. You can retry to grant it.",
+                    [
+                      { text: "OK", style: "cancel" },
+                      {
+                        text: "Retry",
+                        onPress: async () => {
+                          try {
+                            startAwaitingAltitude(4000, false);
+                            const permRetry = await ensureWatcherStarted?.({
+                              promptIfNeeded: true,
+                              attempts: isOffline ? 4 : 2,
+                              waitForAltitudeMs: isOffline ? 14000 : 4000,
+                            });
+                            clearAwaitingTimeout();
+                            if (permRetry?.success) {
+                              setIsDynamic(true);
+                              try {
+                                await SecureStore.setItemAsync(
+                                  "DYNAMIC_FLOOR_PLAN_ENABLED",
+                                  "true"
+                                );
+                              } catch {}
+                              return;
+                            }
+                            setAwaitingAltitude(false);
+                            setAltitudeError("permissionDenied");
+                          } catch {
+                            clearAwaitingTimeout();
+                            setAwaitingAltitude(false);
+                          }
+                        },
+                      },
+                    ]
+                  );
+                }
+              } catch {}
+            },
+          },
+        ]
+      );
+    } catch {}
+  }
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        const stored = await SecureStore.getItemAsync(
+          "DYNAMIC_FLOOR_PLAN_ENABLED"
+        );
+        if (!mounted) return;
+        if (stored === "true") {
+          try {
+            const current = await Location.getForegroundPermissionsAsync();
+            if (current.status === "granted") {
+              setAltitudeError(null);
+
+              startAwaitingAltitude(8000, false);
+              try {
+                const res = await ensureWatcherStarted?.({
+                  promptIfNeeded: false,
+                  attempts: isOffline ? 4 : 2,
+                  waitForAltitudeMs: isOffline ? 14000 : 4000,
+                });
+                clearAwaitingTimeout();
+                if (!res?.success) {
+                  if (res?.permission && res.permission.status !== "granted") {
+                    setAltitudeError("permissionDenied");
+                  } else {
+                    setAltitudeError("unavailable");
+                  }
+                  setAwaitingAltitude(false);
+                }
+              } catch {
+                clearAwaitingTimeout();
+                setAwaitingAltitude(false);
+              }
+              setIsDynamic(true);
+            } else {
+              setIsDynamic(true);
+            }
+          } catch {
+            setIsDynamic(true);
+          }
+        }
+      } catch {}
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    requestPermission,
+    ensureWatcherStarted,
+    startAwaitingAltitude,
+    clearAwaitingTimeout,
+    isOffline,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        clearAwaitingTimeout();
+      } catch {}
+    };
+  }, [clearAwaitingTimeout]);
 
   return (
     <SafeAreaView
@@ -110,52 +558,160 @@ export default function EvacuationPlan() {
               Select a floor to view evacuation routes
             </Text>
           </View>
-          <View
-            style={{
-              borderColor: "#e5e5e5",
-              height: 40,
-              borderWidth: 1,
-              borderRadius: 8,
-              padding: 8,
-              marginTop: 14,
-            }}
+          <TouchableOpacity
+            activeOpacity={0.9}
+            style={[
+              styles.button,
+              { opacity: awaitingAltitude ? 0.7 : isOffline ? 0.9 : 1 },
+            ]}
+            onPress={awaitingAltitude ? cancelAwaiting : toggleDynamicFloorPlan}
+            disabled={awaitingAltitude}
+            aria-disabled={awaitingAltitude}
           >
-            <Dropdown
-              data={floors}
-              maxHeight={300}
-              labelField="label"
-              valueField="value"
-              placeholder={!isFocus ? "Select floor" : "..."}
-              value={selectedFloor}
-              onFocus={() => setIsFocus(true)}
-              onBlur={() => setIsFocus(false)}
-              onChange={(item) => {
-                setSelectedFloor(item.value);
-                setIsFocus(false);
-              }}
-              selectedTextStyle={{
-                fontSize: 14,
-                fontFamily: Platform.select({
-                  android: "PlusJakartaSans_500Medium",
-                  ios: "PlusJakartaSans-Medium",
-                }),
-              }}
-              itemTextStyle={{
+            {awaitingAltitude ? (
+              <>
+                <ActivityIndicator size="small" color="#ffffff" />
+                <Text style={styles.buttonText}>Cancel</Text>
+              </>
+            ) : (
+              <Text style={styles.buttonText}>
+                Switch to {isDynamic ? "static" : "dynamic"} floor plan
+              </Text>
+            )}
+          </TouchableOpacity>
+          {isOffline ? (
+            <Text
+              style={{
+                marginTop: 8,
+                fontSize: 12,
+                color: "#565b60",
                 fontFamily: Platform.select({
                   android: "PlusJakartaSans_400Regular",
                   ios: "PlusJakartaSans-Regular",
                 }),
               }}
-            />
-          </View>
-          <View style={styles.floorPlanImage}>
-            <Image
-              source={currentFloor.imageSrc}
-              style={{ width: "100%", height: "100%" }}
-              contentFit="contain"
-              alt={currentFloor.label}
-            />
-          </View>
+            >
+              Offline: GPS works without internet but it may take longer to get
+              an initial location.
+            </Text>
+          ) : null}
+          {isDynamic ? (
+            <>
+              <View style={styles.floorPlanImage}>
+                {isInsideBuilding === false ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>
+                      You are outside the building area. Dynamic floor plan is
+                      only available while inside the building.
+                    </Text>
+                  </View>
+                ) : awaitingAltitude && altitude == null && !altitudeError ? (
+                  <View style={styles.imageSkeleton} />
+                ) : altitudeError ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>
+                      {altitudeError === "permissionDenied"
+                        ? "Location permission denied. Please enable Location for this app."
+                        : "Unable to determine altitude. Please try again."}
+                    </Text>
+                    <View style={{ flexDirection: "row", marginTop: 8 }}>
+                      {altitudeError === "permissionDenied" ? (
+                        <TouchableOpacity
+                          activeOpacity={0.9}
+                          onPress={() => {
+                            try {
+                              Linking.openSettings();
+                            } catch {}
+                          }}
+                          style={[
+                            styles.secondaryButton,
+                            { paddingHorizontal: 12 },
+                          ]}
+                        >
+                          <Text style={styles.buttonTextSmall}>
+                            Open Settings
+                          </Text>
+                        </TouchableOpacity>
+                      ) : null}
+                      <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={handleRetry}
+                        style={[
+                          styles.secondaryButton,
+                          { paddingHorizontal: 12, marginLeft: 8 },
+                        ]}
+                      >
+                        <Text style={styles.buttonTextSmall}>Retry</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <Image
+                    source={currentFloor.imageSrc}
+                    style={{ width: "100%", height: "100%" }}
+                    contentFit="contain"
+                    alt={currentFloor.label}
+                  />
+                )}
+              </View>
+            </>
+          ) : (
+            <>
+              <View
+                style={{
+                  borderColor: "#e5e5e5",
+                  height: 40,
+                  borderWidth: 1,
+                  borderRadius: 8,
+                  padding: 8,
+                  marginTop: 14,
+                }}
+              >
+                <Dropdown
+                  data={floors}
+                  maxHeight={300}
+                  labelField="label"
+                  valueField="value"
+                  placeholder={!isFocus ? "Select floor" : "..."}
+                  value={selectedFloor}
+                  onFocus={() => setIsFocus(true)}
+                  onBlur={() => setIsFocus(false)}
+                  onChange={(item) => {
+                    setSelectedFloor(item.value);
+                    setIsFocus(false);
+                  }}
+                  placeholderStyle={{
+                    fontSize: 14,
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_500Medium",
+                      ios: "PlusJakartaSans-Medium",
+                    }),
+                  }}
+                  selectedTextStyle={{
+                    fontSize: 14,
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_500Medium",
+                      ios: "PlusJakartaSans-Medium",
+                    }),
+                  }}
+                  itemTextStyle={{
+                    fontFamily: Platform.select({
+                      android: "PlusJakartaSans_400Regular",
+                      ios: "PlusJakartaSans-Regular",
+                    }),
+                  }}
+                />
+              </View>
+              <View style={styles.floorPlanImage}>
+                <Image
+                  source={currentFloor.imageSrc}
+                  style={{ width: "100%", height: "100%" }}
+                  contentFit="contain"
+                  alt={currentFloor.label}
+                />
+              </View>
+            </>
+          )}
         </Card>
         <View>
           <Card>
@@ -246,6 +802,54 @@ const styles = StyleSheet.create({
     fontFamily: Platform.select({
       android: "PlusJakartaSans_400Regular",
       ios: "PlusJakartaSans-Regular",
+    }),
+  },
+  button: {
+    backgroundColor: "#193867",
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+  },
+  buttonText: {
+    color: "#ffffff",
+    marginBottom: 4,
+    fontSize: 12,
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_600SemiBold",
+      ios: "PlusJakartaSans-SemiBold",
+    }),
+  },
+  buttonTextSmall: {
+    color: "#193867",
+    fontSize: 12,
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_500Medium",
+      ios: "PlusJakartaSans-Medium",
+    }),
+  },
+  imageSkeleton: {
+    flex: 1,
+    backgroundColor: "#e6e9ee",
+    borderRadius: 8,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 12,
+  },
+  errorText: {
+    color: "#fb2c36",
+    textAlign: "center",
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_500Medium",
+      ios: "PlusJakartaSans-Medium",
     }),
   },
 });
