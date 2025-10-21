@@ -72,6 +72,7 @@ export default function TabLayout() {
         name="user-management"
         options={{
           title: "User Management",
+          tabBarLabel: "Users",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="person.2.fill" color={color} />
           ),
