@@ -36,7 +36,6 @@ export default function SignInScreen() {
     try {
       await signIn();
     } catch (error) {
-      console.error("Sign in error:", error);
       if (isErrorWithCode(error)) {
         switch (error.code) {
           case statusCodes.SIGN_IN_CANCELLED:
