@@ -98,6 +98,38 @@ export async function updatePushTokenInBackend(
   }
 }
 
+export async function updatePushPreferenceInBackend(
+  userId: string,
+  value: boolean,
+  userToken: string
+) {
+  try {
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/api/users/${userId}/push-notifications`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          pushNotification: value,
+        }),
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+          "Token-Type": "user",
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to update push notification preference: ${response.status} - ${errorText}`
+      );
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
 /**
  * Request push notification permissions and get token if granted
  * @returns Object containing permission status and token (if granted)

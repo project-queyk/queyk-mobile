@@ -21,6 +21,7 @@ import { fetchLatestUserData, signInToBackend } from "@/utils/auth";
 import { isConnected, subscribeToNetworkChanges } from "@/utils/network";
 import {
   requestPushNotificationPermissions,
+  updatePushPreferenceInBackend,
   updatePushTokenInBackend,
 } from "@/utils/pushNotifications";
 
@@ -288,6 +289,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               backendResponse.data.id,
               notifResult.token,
               process.env.EXPO_PUBLIC_AUTH_TOKEN as string
+            );
+            await updatePushPreferenceInBackend(
+              backendResponse.data.id,
+              true,
+              process.env.EXPO_PUBLIC_USER_TOKEN as string
             );
           }
         } catch {}
