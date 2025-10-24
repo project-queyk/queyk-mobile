@@ -648,7 +648,8 @@ export default function EvacuationPlan() {
                   height: 40,
                   borderWidth: 1,
                   borderRadius: 8,
-                  padding: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
                   marginTop: 14,
                 }}
               >
@@ -760,7 +761,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     backgroundColor: "#f1f3f5",
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   floorPlanImage: { width: "100%", aspectRatio: 1280 / 720, marginTop: 12 },
   bulletItemTitle: {
@@ -791,8 +793,8 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#193867",
-    paddingVertical: 10,
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
     width: "100%",
     flexDirection: "row",
