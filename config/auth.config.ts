@@ -55,6 +55,8 @@ export type UserData = {
   profileImage: string;
   alertNotification: boolean;
   pushNotification: boolean;
+  smsNotification: boolean;
+  phoneNumber: string;
   expoPushToken: string | null;
   createdAt: Date;
   role: "user" | "admin";
