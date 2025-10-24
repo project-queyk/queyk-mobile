@@ -40,11 +40,6 @@ export default function EvacuationPlan() {
 
   async function downloadEvacuationPlan() {
     try {
-      Alert.alert(
-        "Downloading",
-        "Please wait while we prepare the evacuation plan..."
-      );
-
       const pdfUrl = process.env.EXPO_PUBLIC_EVAC_PLAN_URL || "";
       const fileName = "evacuation-plan.pdf";
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
@@ -57,18 +52,8 @@ export default function EvacuationPlan() {
           mimeType: "application/pdf",
           dialogTitle: "Save Evacuation Plan",
         });
-      } else {
-        Alert.alert(
-          "Download Complete",
-          `Evacuation plan downloaded successfully!`
-        );
       }
-    } catch {
-      Alert.alert(
-        "Download Error",
-        "Failed to download the evacuation plan. Please check your internet connection and try again."
-      );
-    }
+    } catch {}
   }
 
   const {

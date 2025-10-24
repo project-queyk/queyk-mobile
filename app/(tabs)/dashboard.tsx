@@ -501,11 +501,6 @@ export default function Dashboard() {
     endDate?: string
   ) {
     try {
-      Alert.alert(
-        "Downloading",
-        "Please wait while we prepare your seismic report..."
-      );
-
       const dateNow = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
       const timestamp = `${dateNow.getFullYear()}-${pad(
@@ -534,12 +529,17 @@ export default function Dashboard() {
           mimeType: "application/pdf",
           dialogTitle: "Save Seismic Report",
         });
-        Alert.alert("Download Complete", "Your seismic report is ready!");
-      } else {
-        Alert.alert(
-          "Download Complete",
-          "Seismic report downloaded successfully to app storage!"
-        );
+
+        if (Platform.OS === "android") {
+          const downloadsDir = FileSystem.documentDirectory;
+          const destUri = `${downloadsDir}${filename}`;
+          try {
+            await FileSystem.copyAsync({
+              from: fileUri,
+              to: destUri,
+            });
+          } catch {}
+        }
       }
     } catch {
       Alert.alert(
@@ -585,14 +585,14 @@ export default function Dashboard() {
           <TouchableOpacity
             style={[
               styles.selectBox,
-              { opacity: earthquakeDataIsLoading || isOffline ? 0.7 : 1 },
+              { opacity: readingsDataIsLoading || isOffline ? 0.7 : 1 },
             ]}
             activeOpacity={0.9}
             onPress={() => {
               setIsDatePickerModalVisible(true);
             }}
-            aria-disabled={earthquakeDataIsLoading || isOffline}
-            disabled={earthquakeDataIsLoading || isOffline}
+            aria-disabled={readingsDataIsLoading || isOffline}
+            disabled={readingsDataIsLoading || isOffline}
           >
             <View
               style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
@@ -617,7 +617,14 @@ export default function Dashboard() {
           <TouchableOpacity
             style={[
               styles.button,
-              { opacity: earthquakeDataIsLoading || isOffline ? 0.7 : 1 },
+              {
+                opacity:
+                  readingsDataIsLoading ||
+                  isOffline ||
+                  !!!readingsData.data.length
+                    ? 0.7
+                    : 1,
+              },
             ]}
             activeOpacity={0.9}
             onPress={() =>
@@ -627,8 +634,12 @@ export default function Dashboard() {
                 customDateRange?.endId
               )
             }
-            aria-disabled={earthquakeDataIsLoading || isOffline}
-            disabled={earthquakeDataIsLoading || isOffline}
+            aria-disabled={
+              readingsDataIsLoading || isOffline || !!!readingsData.data.length
+            }
+            disabled={
+              readingsDataIsLoading || isOffline || !!!readingsData.data.length
+            }
           >
             <MaterialIcons
               name="description"
@@ -945,11 +956,7 @@ export default function Dashboard() {
                 style={[
                   styles.aiSummaryText,
                   {
-                    marginBottom:
-                      !formatSeismicMonitorDateFromFlash(dateRange) ||
-                      !aiSummary
-                        ? 10
-                        : 0,
+                    marginBottom: 6,
                   },
                 ]}
               >
