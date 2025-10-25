@@ -28,6 +28,7 @@ import { useNetworkStatus } from "@/hooks/use-network-status";
 import { formatSeismicMonitorDateFromFlash } from "@/utils/date-adapter";
 
 import Card from "@/components/Card";
+import ShimmerView from "@/components/ShimmerView";
 
 export type ReadingData = {
   battery: number;
@@ -660,7 +661,7 @@ export default function Dashboard() {
             <View>
               {readingsDataIsLoading ? (
                 <View style={{ height: 32, width: 64 }}>
-                  <View style={styles.cardValueSkeleton} />
+                  <ShimmerView style={styles.cardValueSkeleton} />
                 </View>
               ) : (
                 <View style={{ flexDirection: "column" }}>
@@ -687,7 +688,7 @@ export default function Dashboard() {
             <View>
               {readingsDataIsLoading ? (
                 <View style={{ height: 32, width: 64 }}>
-                  <View style={styles.cardValueSkeleton} />
+                  <ShimmerView style={styles.cardValueSkeleton} />
                 </View>
               ) : (
                 <View style={{ flexDirection: "column" }}>
@@ -714,7 +715,7 @@ export default function Dashboard() {
             <View>
               {readingsDataIsLoading ? (
                 <View style={{ height: 32, width: 64 }}>
-                  <View style={styles.cardValueSkeleton} />
+                  <ShimmerView style={styles.cardValueSkeleton} />
                 </View>
               ) : (
                 <View style={{ flexDirection: "column" }}>
@@ -741,7 +742,7 @@ export default function Dashboard() {
             <View>
               {readingsDataIsLoading ? (
                 <View style={{ height: 32, width: 64 }}>
-                  <View style={styles.cardValueSkeleton} />
+                  <ShimmerView style={styles.cardValueSkeleton} />
                 </View>
               ) : (
                 <View style={{ flexDirection: "column" }}>
@@ -909,51 +910,57 @@ export default function Dashboard() {
           <View>
             {readingsDataIsLoading ? (
               <View style={{ gap: 8, marginTop: 2, marginBottom: 14 }}>
-                <LinearGradient
-                  colors={[
-                    "rgba(255,255,255,0.98)",
-                    "#eef6ff",
-                    "rgba(255,255,255,0.98)",
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[
-                    styles.aiSkeleton,
-                    {
-                      width: "100%",
-                    },
-                  ]}
-                />
-                <LinearGradient
-                  colors={[
-                    "rgba(255,255,255,0.98)",
-                    "#e6f0ff",
-                    "rgba(255,255,255,0.98)",
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[
-                    styles.aiSkeleton,
-                    {
-                      width: "75%",
-                    },
-                  ]}
-                />
-                <LinearGradient
-                  colors={[
-                    "rgba(255,255,255,0.98)",
-                    "#dde9fb",
-                    "rgba(255,255,255,0.98)",
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[
-                    styles.aiSkeleton,
-                    {
-                      width: "50%",
-                    },
-                  ]}
-                />
+                <ShimmerView shimmerColor="rgba(147, 197, 253, 0.6)">
+                  <LinearGradient
+                    colors={[
+                      "rgba(255,255,255,0.98)",
+                      "#eef6ff",
+                      "rgba(255,255,255,0.98)",
+                    ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[
+                      styles.aiSkeleton,
+                      {
+                        width: "100%",
+                      },
+                    ]}
+                  />
+                </ShimmerView>
+                <ShimmerView shimmerColor="rgba(147, 197, 253, 0.6)">
+                  <LinearGradient
+                    colors={[
+                      "rgba(255,255,255,0.98)",
+                      "#e6f0ff",
+                      "rgba(255,255,255,0.98)",
+                    ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[
+                      styles.aiSkeleton,
+                      {
+                        width: "75%",
+                      },
+                    ]}
+                  />
+                </ShimmerView>
+                <ShimmerView shimmerColor="rgba(147, 197, 253, 0.6)">
+                  <LinearGradient
+                    colors={[
+                      "rgba(255,255,255,0.98)",
+                      "#dde9fb",
+                      "rgba(255,255,255,0.98)",
+                    ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[
+                      styles.aiSkeleton,
+                      {
+                        width: "50%",
+                      },
+                    ]}
+                  />
+                </ShimmerView>
               </View>
             ) : (
               <Text
@@ -980,7 +987,7 @@ export default function Dashboard() {
             <View>
               {readingsDataIsLoading ? (
                 <View style={{ height: 32, width: 64 }}>
-                  <View style={styles.cardValueSkeleton} />
+                  <ShimmerView style={styles.cardValueSkeleton} />
                 </View>
               ) : (
                 <View style={{ flexDirection: "column" }}>
@@ -1279,8 +1286,8 @@ const styles = StyleSheet.create({
     }),
   },
   aiSkeleton: {
-    height: 16,
-    borderRadius: 8,
+    height: 18,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.06)",
     backgroundColor: "rgba(255,255,255,0.98)",

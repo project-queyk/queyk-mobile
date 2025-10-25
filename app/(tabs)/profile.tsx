@@ -24,6 +24,7 @@ import {
 } from "@/utils/pushNotifications";
 
 import Card from "@/components/Card";
+import ShimmerView from "@/components/ShimmerView";
 
 export default function Profile() {
   const { userData: accountData, signOut } = useAuth();
@@ -54,6 +55,7 @@ export default function Profile() {
 
   const {
     data: userData,
+    isLoading: userDataIsLoading,
     refetch: refetchUserData,
     isRefetching: isRefetchingUserData,
   } = useQuery({
@@ -554,11 +556,17 @@ export default function Profile() {
               >
                 <View>
                   <Text style={styles.settingsText}>Phone Number:</Text>
-                  <Text style={styles.settingsValue}>
-                    {userData?.data?.phoneNumber
-                      ? `0${userData.data.phoneNumber.slice(3)}`
-                      : "Not set"}
-                  </Text>
+                  {userDataIsLoading ? (
+                    <View style={{ height: 28, width: 64 }}>
+                      <ShimmerView style={styles.cardValueSkeleton} />
+                    </View>
+                  ) : (
+                    <Text style={styles.settingsValue}>
+                      {userData?.data?.phoneNumber
+                        ? `0${userData.data.phoneNumber.slice(3)}`
+                        : "Not set"}
+                    </Text>
+                  )}
                 </View>
                 <TouchableOpacity
                   activeOpacity={0.9}
@@ -798,6 +806,13 @@ const styles = StyleSheet.create({
       android: "PlusJakartaSans_500Medium",
       ios: "PlusJakartaSans-Medium",
     }),
+  },
+  cardValueSkeleton: {
+    height: 32,
+    width: 64,
+    backgroundColor: "#d1d5db",
+    borderRadius: 4,
+    marginTop: 2,
   },
   secondaryButton: {
     borderColor: "#e5e5e5",
