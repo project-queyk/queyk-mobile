@@ -621,7 +621,7 @@ export default function Dashboard() {
                 opacity:
                   readingsDataIsLoading ||
                   isOffline ||
-                  !!!readingsData.data.length
+                  !!!readingsData?.data?.length
                     ? 0.7
                     : 1,
               },
@@ -635,10 +635,14 @@ export default function Dashboard() {
               )
             }
             aria-disabled={
-              readingsDataIsLoading || isOffline || !!!readingsData.data.length
+              readingsDataIsLoading ||
+              isOffline ||
+              !!!readingsData?.data?.length
             }
             disabled={
-              readingsDataIsLoading || isOffline || !!!readingsData.data.length
+              readingsDataIsLoading ||
+              isOffline ||
+              !!!readingsData?.data?.length
             }
           >
             <MaterialIcons
