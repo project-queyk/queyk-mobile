@@ -795,10 +795,6 @@ export default function EvacuationPlan() {
           </View>
         </View>
       </Dialog>
-      <Text style={styles.footerText}>
-        Based on guidelines from NDRRMC, PHIVOLCS, and the Philippine Disaster
-        Risk Reduction and Management Act (RA 10121)
-      </Text>
     </SafeAreaView>
   );
 }
