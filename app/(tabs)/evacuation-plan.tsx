@@ -7,7 +7,6 @@ import * as Sharing from "expo-sharing";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   Platform,
   ScrollView,
@@ -18,6 +17,7 @@ import {
 } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Dialog } from "react-native-simple-dialogs";
 
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import useRealTimeAltitude from "@/hooks/use-realtime-altitude";
@@ -34,6 +34,9 @@ export default function EvacuationPlan() {
   );
   const [isFocus, setIsFocus] = useState(false);
   const [isDynamic, setIsDynamic] = useState(false);
+
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogType, setDialogType] = useState<string | null>(null);
 
   const currentFloor: Floor =
     floors.find((floor) => floor.value === selectedFloor) ?? floors[0];
@@ -277,21 +280,8 @@ export default function EvacuationPlan() {
     try {
       const servicesEnabled = await Location.hasServicesEnabledAsync();
       if (!servicesEnabled) {
-        Alert.alert(
-          "Location services disabled",
-          "Your device Location services are turned off. Please enable them to use the dynamic floor plan.",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Open Settings",
-              onPress: () => {
-                try {
-                  Linking.openSettings();
-                } catch {}
-              },
-            },
-          ]
-        );
+        setDialogType("locationServicesDisabled");
+        setDialogVisible(true);
         return;
       }
 
@@ -334,100 +324,8 @@ export default function EvacuationPlan() {
         }
       }
 
-      Alert.alert(
-        "Enable Location",
-        "Allow this app to access your device location so we can show a dynamic floor plan based on your altitude.",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Continue",
-            onPress: async () => {
-              try {
-                setAltitudeError(null);
-                startAwaitingAltitude(4000, true);
-                setIsDynamic(true);
-                const result = await ensureWatcherStarted?.({
-                  promptIfNeeded: true,
-                  attempts: isOffline ? 4 : 2,
-                  waitForAltitudeMs: isOffline ? 14000 : 4000,
-                });
-                clearAwaitingTimeout();
-                if (result?.success) {
-                  try {
-                    await SecureStore.setItemAsync(
-                      "DYNAMIC_FLOOR_PLAN_ENABLED",
-                      "true"
-                    );
-                  } catch {}
-                  return;
-                }
-
-                setAwaitingAltitude(false);
-                setIsDynamic(false);
-
-                const currentAfter =
-                  await Location.getForegroundPermissionsAsync();
-                if (currentAfter.canAskAgain === false) {
-                  setAltitudeError("permissionDenied");
-                  Alert.alert(
-                    "Location permission needed",
-                    "To show a live dynamic floor plan the app needs Location access. Please enable it in your device settings.",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      {
-                        text: "Open Settings",
-                        onPress: () => {
-                          try {
-                            Linking.openSettings();
-                          } catch {}
-                        },
-                      },
-                    ]
-                  );
-                } else {
-                  setAltitudeError("permissionDenied");
-                  Alert.alert(
-                    "Permission denied",
-                    "Location permission was denied. You can retry to grant it.",
-                    [
-                      { text: "OK", style: "cancel" },
-                      {
-                        text: "Retry",
-                        onPress: async () => {
-                          try {
-                            startAwaitingAltitude(4000, false);
-                            const permRetry = await ensureWatcherStarted?.({
-                              promptIfNeeded: true,
-                              attempts: isOffline ? 4 : 2,
-                              waitForAltitudeMs: isOffline ? 14000 : 4000,
-                            });
-                            clearAwaitingTimeout();
-                            if (permRetry?.success) {
-                              setIsDynamic(true);
-                              try {
-                                await SecureStore.setItemAsync(
-                                  "DYNAMIC_FLOOR_PLAN_ENABLED",
-                                  "true"
-                                );
-                              } catch {}
-                              return;
-                            }
-                            setAwaitingAltitude(false);
-                            setAltitudeError("permissionDenied");
-                          } catch {
-                            clearAwaitingTimeout();
-                            setAwaitingAltitude(false);
-                          }
-                        },
-                      },
-                    ]
-                  );
-                }
-              } catch {}
-            },
-          },
-        ]
-      );
+      setDialogType("enableLocation");
+      setDialogVisible(true);
     } catch {}
   }
 
@@ -734,6 +632,173 @@ export default function EvacuationPlan() {
           Risk Reduction and Management Act (RA 10121)
         </Text>
       </ScrollView>
+      <Dialog
+        visible={dialogVisible}
+        title={
+          dialogType === "locationServicesDisabled"
+            ? "Location services disabled"
+            : dialogType === "enableLocation"
+            ? "Enable Location"
+            : dialogType === "locationPermissionNeeded"
+            ? "Location permission needed"
+            : dialogType === "permissionDenied"
+            ? "Permission denied"
+            : ""
+        }
+        titleStyle={[styles.headerText, { textAlign: "center" }]}
+        dialogStyle={styles.dialog}
+        contentStyle={{ paddingTop: 8 }}
+        onTouchOutside={() => setDialogVisible(false)}
+        onRequestClose={() => setDialogVisible(false)}
+        contentInsetAdjustmentBehavior="never"
+        animationType="fade"
+      >
+        <View>
+          <Text style={[styles.settingsText, { textAlign: "center" }]}>
+            {dialogType === "locationServicesDisabled"
+              ? "Your device's location services are turned off. Please enable them to use the dynamic floor plan."
+              : dialogType === "enableLocation"
+              ? "Allow this app to access your device location so we can show a dynamic floor plan based on your altitude."
+              : dialogType === "locationPermissionNeeded"
+              ? "To show a live dynamic floor plan the app needs Location access. Please enable it in your device settings."
+              : dialogType === "permissionDenied"
+              ? "Location permission was denied. You can retry to grant it."
+              : ""}
+          </Text>
+          <View
+            style={{
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 10,
+              marginTop: 14,
+            }}
+          >
+            <TouchableOpacity
+              activeOpacity={0.9}
+              style={[
+                styles.button,
+                {
+                  backgroundColor:
+                    dialogType === "locationServicesDisabled" ||
+                    dialogType === "locationPermissionNeeded"
+                      ? "#193867"
+                      : dialogType === "permissionDenied"
+                      ? "#193867"
+                      : "#193867",
+                  marginBottom: 0,
+                },
+              ]}
+              onPress={async () => {
+                if (dialogType === "locationServicesDisabled") {
+                  try {
+                    Linking.openSettings();
+                  } catch {}
+                  setDialogVisible(false);
+                } else if (dialogType === "enableLocation") {
+                  // Continue logic
+                  try {
+                    setAltitudeError(null);
+                    startAwaitingAltitude(4000, true);
+                    setIsDynamic(true);
+                    const result = await ensureWatcherStarted?.({
+                      promptIfNeeded: true,
+                      attempts: isOffline ? 4 : 2,
+                      waitForAltitudeMs: isOffline ? 14000 : 4000,
+                    });
+                    clearAwaitingTimeout();
+                    if (result?.success) {
+                      try {
+                        await SecureStore.setItemAsync(
+                          "DYNAMIC_FLOOR_PLAN_ENABLED",
+                          "true"
+                        );
+                      } catch {}
+                      setDialogVisible(false);
+                      return;
+                    }
+
+                    setAwaitingAltitude(false);
+                    setIsDynamic(false);
+
+                    const currentAfter =
+                      await Location.getForegroundPermissionsAsync();
+                    if (currentAfter.canAskAgain === false) {
+                      setAltitudeError("permissionDenied");
+                      setDialogType("locationPermissionNeeded");
+                      // setDialogVisible(true); already visible
+                    } else {
+                      setAltitudeError("permissionDenied");
+                      setDialogType("permissionDenied");
+                      // setDialogVisible(true);
+                    }
+                  } catch {}
+                } else if (dialogType === "locationPermissionNeeded") {
+                  try {
+                    Linking.openSettings();
+                  } catch {}
+                  setDialogVisible(false);
+                } else if (dialogType === "permissionDenied") {
+                  // Retry logic
+                  try {
+                    startAwaitingAltitude(4000, false);
+                    const permRetry = await ensureWatcherStarted?.({
+                      promptIfNeeded: true,
+                      attempts: isOffline ? 4 : 2,
+                      waitForAltitudeMs: isOffline ? 14000 : 4000,
+                    });
+                    clearAwaitingTimeout();
+                    if (permRetry?.success) {
+                      setIsDynamic(true);
+                      try {
+                        await SecureStore.setItemAsync(
+                          "DYNAMIC_FLOOR_PLAN_ENABLED",
+                          "true"
+                        );
+                      } catch {}
+                      setDialogVisible(false);
+                      return;
+                    }
+                    setAwaitingAltitude(false);
+                    setAltitudeError("permissionDenied");
+                    setDialogVisible(false);
+                  } catch {
+                    clearAwaitingTimeout();
+                    setAwaitingAltitude(false);
+                    setDialogVisible(false);
+                  }
+                }
+              }}
+            >
+              <Text style={styles.buttonText}>
+                {dialogType === "locationServicesDisabled" ||
+                dialogType === "locationPermissionNeeded"
+                  ? "Open Settings"
+                  : dialogType === "enableLocation"
+                  ? "Continue"
+                  : dialogType === "permissionDenied"
+                  ? "Retry"
+                  : "Continue"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              style={[
+                styles.outlineButton,
+                { width: "100%", alignItems: "center" },
+              ]}
+              onPress={() => setDialogVisible(false)}
+            >
+              <Text style={[styles.buttonText, { color: "#000" }]}>
+                {dialogType === "permissionDenied" ? "OK" : "Cancel"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Dialog>
+      <Text style={styles.footerText}>
+        Based on guidelines from NDRRMC, PHIVOLCS, and the Philippine Disaster
+        Risk Reduction and Management Act (RA 10121)
+      </Text>
     </SafeAreaView>
   );
 }
@@ -838,5 +903,24 @@ const styles = StyleSheet.create({
       android: "PlusJakartaSans_500Medium",
       ios: "PlusJakartaSans-Medium",
     }),
+  },
+  dialog: {
+    borderRadius: 8,
+  },
+  settingsText: {
+    fontSize: 14,
+    color: "#565b60ff",
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_400Regular",
+      ios: "PlusJakartaSans-Regular",
+    }),
+  },
+  outlineButton: {
+    borderColor: "#e5e5e5",
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
 });

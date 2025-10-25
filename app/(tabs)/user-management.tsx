@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { useEffect, useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -18,6 +17,7 @@ import {
 } from "react-native";
 import { DataTable } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Dialog } from "react-native-simple-dialogs";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { User, UsersResponse } from "@/utils/types/users";
@@ -145,6 +145,10 @@ export default function UserManagement() {
   const [isUserEditModalOpen, setIsUserEditModalOpen] = useState(false);
   const [accountData, setAccountData] = useState<User | null>(null);
 
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogType, setDialogType] = useState<string | null>(null);
+  const [dialogUser, setDialogUser] = useState<User | null>(null);
+
   const { data, error, isLoading, isError, refetch } = useQuery<UsersResponse>({
     queryKey: ["users", page, itemsPerPage, search],
     queryFn: async () => {
@@ -211,34 +215,6 @@ export default function UserManagement() {
     },
   });
 
-  function toggleEmailNotificationAlert(user: User) {
-    const isEmailAlertEnabled = user.pushNotification;
-    Alert.alert(
-      isEmailAlertEnabled
-        ? "Disable Email Notifications?"
-        : "Enable Email Notifications?",
-      isEmailAlertEnabled
-        ? "This user will no longer receive email alerts when earthquake activity is detected."
-        : "This user will receive email alerts when earthquake activity is detected.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Continue",
-          onPress: () => {
-            const currentValue = user.alertNotification || false;
-            updateEmailNotification({
-              userId: user.id,
-              alertNotification: !currentValue,
-            });
-          },
-        },
-      ]
-    );
-  }
-
   const { mutate: updateUserRole } = useMutation({
     mutationFn: async (newValue: {
       userId: string;
@@ -278,31 +254,16 @@ export default function UserManagement() {
     },
   });
 
+  function toggleEmailNotificationAlert(user: User) {
+    setDialogType("toggleEmail");
+    setDialogUser(user);
+    setDialogVisible(true);
+  }
+
   function toggleUserRole(user: User) {
-    const isAdmin = user.role === "admin";
-    Alert.alert(
-      isAdmin
-        ? "Change this user's role to User?"
-        : "Change this user's role to Admin?",
-      isAdmin
-        ? "This user will lose administrative privileges and revert to a standard user."
-        : "This user will be granted administrative privileges and can manage other users.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Continue",
-          onPress: () => {
-            updateUserRole({
-              userId: user.id,
-              role: isAdmin ? "user" : "admin",
-            });
-          },
-        },
-      ]
-    );
+    setDialogType("toggleRole");
+    setDialogUser(user);
+    setDialogVisible(true);
   }
 
   useEffect(() => {
@@ -563,6 +524,90 @@ export default function UserManagement() {
           onToggleEmailNotificationAlert={toggleEmailNotificationAlert}
           onToggleUserRole={toggleUserRole}
         />
+        <Dialog
+          visible={dialogVisible}
+          title={
+            dialogType === "toggleEmail"
+              ? dialogUser?.alertNotification
+                ? "Disable Email Notifications?"
+                : "Enable Email Notifications?"
+              : dialogType === "toggleRole"
+              ? dialogUser?.role === "admin"
+                ? "Change this user's role to User?"
+                : "Change this user's role to Admin?"
+              : ""
+          }
+          titleStyle={[styles.headerText, { textAlign: "center" }]}
+          dialogStyle={styles.dialog}
+          contentStyle={{ paddingTop: 8 }}
+          onTouchOutside={() => setDialogVisible(false)}
+          onRequestClose={() => setDialogVisible(false)}
+          contentInsetAdjustmentBehavior="never"
+          animationType="fade"
+        >
+          <View>
+            <Text style={[styles.settingsText, { textAlign: "center" }]}>
+              {dialogType === "toggleEmail"
+                ? dialogUser?.alertNotification
+                  ? "This user will no longer receive email alerts when earthquake activity is detected."
+                  : "This user will receive email alerts when earthquake activity is detected."
+                : dialogType === "toggleRole"
+                ? dialogUser?.role === "admin"
+                  ? "This user will lose administrative privileges and revert to a standard user."
+                  : "This user will be granted administrative privileges and can manage other users."
+                : ""}
+            </Text>
+            <View
+              style={{
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 10,
+                marginTop: 14,
+              }}
+            >
+              <TouchableOpacity
+                activeOpacity={0.9}
+                style={[
+                  styles.button,
+                  {
+                    backgroundColor: "#193867",
+                    marginBottom: 0,
+                  },
+                ]}
+                onPress={() => {
+                  if (dialogType === "toggleEmail" && dialogUser) {
+                    const currentValue = dialogUser.alertNotification || false;
+                    updateEmailNotification({
+                      userId: dialogUser.id,
+                      alertNotification: !currentValue,
+                    });
+                  } else if (dialogType === "toggleRole" && dialogUser) {
+                    const isAdmin = dialogUser.role === "admin";
+                    updateUserRole({
+                      userId: dialogUser.id,
+                      role: isAdmin ? "user" : "admin",
+                    });
+                  }
+                  setDialogVisible(false);
+                }}
+              >
+                <Text style={styles.buttonText}>Continue</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                style={[
+                  styles.outlineButton,
+                  { width: "100%", alignItems: "center" },
+                ]}
+                onPress={() => setDialogVisible(false)}
+              >
+                <Text style={[styles.buttonText, { color: "#000" }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Dialog>
       </SafeAreaView>
     </AdminRoute>
   );
@@ -700,5 +745,53 @@ const styles = StyleSheet.create({
       android: "PlusJakartaSans_500Medium",
       ios: "PlusJakartaSans-Medium",
     }),
+  },
+  dialog: {
+    borderRadius: 8,
+  },
+  settingsText: {
+    fontSize: 14,
+    color: "#565b60ff",
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_400Regular",
+      ios: "PlusJakartaSans-Regular",
+    }),
+  },
+  outlineButton: {
+    borderColor: "#e5e5e5",
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  button: {
+    backgroundColor: "#193867",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+  },
+  buttonText: {
+    color: "#ffffff",
+    marginBottom: 4,
+    fontSize: 12,
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_600SemiBold",
+      ios: "PlusJakartaSans-SemiBold",
+    }),
+  },
+  secondaryButton: {
+    borderColor: "#e5e5e5",
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: "#f1f3f5",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
 });
