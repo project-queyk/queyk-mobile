@@ -557,7 +557,7 @@ export default function Profile() {
                 <View>
                   <Text style={styles.settingsText}>Phone Number:</Text>
                   {userDataIsLoading ? (
-                    <View style={{ height: 28, width: 64 }}>
+                    <View style={{ height: 24, width: 64 }}>
                       <ShimmerView style={styles.cardValueSkeleton} />
                     </View>
                   ) : (
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
     }),
   },
   cardValueSkeleton: {
-    height: 32,
+    height: 24,
     width: 64,
     backgroundColor: "#d1d5db",
     borderRadius: 4,
