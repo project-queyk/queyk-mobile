@@ -7,13 +7,13 @@ import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Dialog } from "react-native-simple-dialogs";
 
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -22,6 +22,9 @@ import Card from "@/components/Card";
 export default function SignInScreen() {
   const { user, userData, isLoading, signIn } = useAuth();
   const router = useRouter();
+  const [dialogVisible, setDialogVisible] = React.useState(false);
+  const [dialogTitle, setDialogTitle] = React.useState("");
+  const [dialogMessage, setDialogMessage] = React.useState("");
 
   useEffect(() => {
     if (!isLoading && user && userData) {
@@ -39,37 +42,45 @@ export default function SignInScreen() {
       if (isErrorWithCode(error)) {
         switch (error.code) {
           case statusCodes.SIGN_IN_CANCELLED:
-            Alert.alert("Cancelled", "User cancelled the login.");
+            setDialogTitle("Cancelled");
+            setDialogMessage("User cancelled the login.");
+            setDialogVisible(true);
             break;
           case statusCodes.IN_PROGRESS:
-            Alert.alert("In Progress", "Sign in is already in progress.");
+            setDialogTitle("In Progress");
+            setDialogMessage("Sign in is already in progress.");
+            setDialogVisible(true);
             break;
           case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-            Alert.alert("Error", "Play Services not available or outdated.");
+            setDialogTitle("Error");
+            setDialogMessage("Play Services not available or outdated.");
+            setDialogVisible(true);
             break;
           default:
-            Alert.alert(
-              "Google Sign-In Error",
+            setDialogTitle("Google Sign-In Error");
+            setDialogMessage(
               `Error Code: ${error.code}\nMessage: ${
                 error.message || "Unknown Google Sign-In error"
               }`
             );
+            setDialogVisible(true);
         }
       } else if (error instanceof Error) {
         if (error.message.includes("email addresses are allowed")) {
-          Alert.alert("Access Denied", error.message, [{ text: "OK" }]);
+          setDialogTitle("Access Denied");
+          setDialogMessage(error.message);
+          setDialogVisible(true);
         } else {
-          Alert.alert(
-            "Sign-In Error",
-            error.message || "An error occurred during sign in.",
-            [{ text: "OK" }]
+          setDialogTitle("Sign-In Error");
+          setDialogMessage(
+            error.message || "An error occurred during sign in."
           );
+          setDialogVisible(true);
         }
       } else {
-        Alert.alert(
-          "Unexpected Error",
-          `Something went wrong: ${JSON.stringify(error)}`
-        );
+        setDialogTitle("Unexpected Error");
+        setDialogMessage(`Something went wrong: ${JSON.stringify(error)}`);
+        setDialogVisible(true);
       }
     }
   }
@@ -109,6 +120,44 @@ export default function SignInScreen() {
           <Text style={styles.buttonText}>Sign in with Google</Text>
         </TouchableOpacity>
       </Card>
+      <Dialog
+        visible={dialogVisible}
+        title={dialogTitle}
+        titleStyle={[styles.title, { textAlign: "center" }]}
+        dialogStyle={styles.dialog}
+        contentStyle={{ paddingTop: 8 }}
+        onTouchOutside={() => setDialogVisible(false)}
+        onRequestClose={() => setDialogVisible(false)}
+        contentInsetAdjustmentBehavior="never"
+        animationType="fade"
+      >
+        <View>
+          <Text style={[styles.subText, { textAlign: "center" }]}>
+            {dialogMessage}
+          </Text>
+          <View
+            style={{
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <TouchableOpacity
+              activeOpacity={0.9}
+              style={[
+                styles.button,
+                {
+                  backgroundColor: "#193867",
+                  marginBottom: 0,
+                },
+              ]}
+              onPress={() => setDialogVisible(false)}
+            >
+              <Text style={styles.buttonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Dialog>
     </View>
   );
 }
@@ -183,5 +232,8 @@ const styles = StyleSheet.create({
       android: "PlusJakartaSans_600SemiBold",
       ios: "PlusJakartaSans-SemiBold",
     }),
+  },
+  dialog: {
+    borderRadius: 8,
   },
 });
