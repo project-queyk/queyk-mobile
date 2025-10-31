@@ -1,7 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useDateRange } from "@marceloterreiro/flash-calendar";
 import MaskedView from "@react-native-masked-view/masked-view";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import * as FileSystem from "expo-file-system/legacy";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams } from "expo-router";
@@ -238,6 +238,7 @@ export default function Dashboard() {
     const day = String(today.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   }, []);
+  const [cooldown, setCooldown] = useState(0);
 
   const [customDateRange, setCustomDateRange] = useState<{
     startId?: string;
@@ -263,6 +264,13 @@ export default function Dashboard() {
     }),
     [customDateRange?.startId, customDateRange?.endId, todayDateId]
   );
+
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
 
   const { dateRange } = useDateRange(dateRangeConfig);
 
@@ -354,6 +362,27 @@ export default function Dashboard() {
     enabled: userData?.role === "admin" && !isOffline,
   });
 
+  const { mutate: resetIoT, isPending: resetIoTIsPending } = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/api/iot/device/reset`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.EXPO_PUBLIC_ADMIN_TOKEN}`,
+            "Token-Type": "admin",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to reboot IoT device");
+      }
+
+      return response.json();
+    },
+  });
+
   useEffect(() => {
     if (readingsData?.firstDate && !hasSetPersistedDate.current) {
       setPersistedFirstDate(new Date(readingsData.firstDate));
@@ -383,9 +412,11 @@ export default function Dashboard() {
   const batteryLevel = readingsData?.batteryLevel || 0;
   const aiSummary = readingsData?.aiSummary || "";
 
-  const getBatteryColor = (level: number) => {
-    if (level >= 70) return "#00c950";
-    if (level >= 30) return "#f0b100";
+  const getBatteryColor = (level: number | null) => {
+    if (typeof level === "number") {
+      if (level >= 70) return "#00c950";
+      if (level >= 30) return "#f0b100";
+    }
     return "#fb2c36";
   };
 
@@ -981,32 +1012,61 @@ export default function Dashboard() {
             </Text>
           </View>
         </Card>
-        <Card>
-          <View>
-            <Text style={styles.headerText}>Battery Level</Text>
+        <View style={{ position: "relative" }}>
+          <Card>
             <View>
-              {readingsDataIsLoading ? (
-                <View style={{ height: 32, width: 64 }}>
-                  <ShimmerView style={styles.cardValueSkeleton} />
-                </View>
-              ) : (
-                <View style={{ flexDirection: "column" }}>
-                  <Text
-                    style={[
-                      styles.cardValue,
-                      { color: getBatteryColor(batteryLevel) },
-                    ]}
-                  >
-                    {batteryLevel ? `${batteryLevel}%` : "--"}
-                  </Text>
-                </View>
-              )}
-              <Text style={styles.cardValueSubText}>
-                Current IoT sensor battery level
-              </Text>
+              <Text style={styles.headerText}>Battery Level</Text>
+              <View>
+                {readingsDataIsLoading ? (
+                  <View style={{ height: 32, width: 64 }}>
+                    <ShimmerView style={styles.cardValueSkeleton} />
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: "column" }}>
+                    <Text
+                      style={[
+                        styles.cardValue,
+                        { color: getBatteryColor(batteryLevel) },
+                      ]}
+                    >
+                      {batteryLevel ? `${batteryLevel}%` : "Offline"}
+                    </Text>
+                  </View>
+                )}
+                <Text style={styles.cardValueSubText}>
+                  Current IoT sensor battery level
+                </Text>
+              </View>
             </View>
-          </View>
-        </Card>
+          </Card>
+          <TouchableOpacity
+            style={[
+              styles.secondaryButton,
+              {
+                opacity:
+                  resetIoTIsPending || cooldown > 0 || !batteryLevel ? 0.7 : 1,
+                position: "absolute",
+                top: 24,
+                right: 24,
+                flexShrink: 0,
+              },
+            ]}
+            activeOpacity={0.9}
+            disabled={resetIoTIsPending || cooldown > 0 || !batteryLevel}
+            onPress={() => {
+              resetIoT();
+              setCooldown(30);
+            }}
+          >
+            <MaterialIcons
+              name="power-settings-new"
+              size={16}
+              color="#193867"
+              style={{ marginTop: 1 }}
+            />
+            <Text style={styles.secondaryButtonText}>Reboot device</Text>
+          </TouchableOpacity>
+        </View>
         <Card>
           <View
             style={{
@@ -1196,12 +1256,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  secondaryButton: {
+    borderColor: "#e5e5e5",
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: "#f1f3f5",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
   buttonText: {
     color: "#ffffff",
     fontSize: 12,
     fontFamily: Platform.select({
       android: "PlusJakartaSans_600SemiBold",
       ios: "PlusJakartaSans-SemiBold",
+    }),
+  },
+  secondaryButtonText: {
+    color: "#193867",
+    fontSize: 12,
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_500Medium",
+      ios: "PlusJakartaSans-Medium",
     }),
   },
   cardValue: {
