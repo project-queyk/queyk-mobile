@@ -123,7 +123,7 @@ export default function SignInScreen() {
       <Dialog
         visible={dialogVisible}
         title={dialogTitle}
-        titleStyle={[styles.title, { textAlign: "center" }]}
+        titleStyle={[styles.title, { textAlign: "center", marginBottom: 0 }]}
         dialogStyle={styles.dialog}
         contentStyle={{ paddingTop: 8 }}
         onTouchOutside={() => setDialogVisible(false)}
@@ -132,7 +132,12 @@ export default function SignInScreen() {
         animationType="fade"
       >
         <View>
-          <Text style={[styles.subText, { textAlign: "center" }]}>
+          <Text
+            style={[
+              styles.subText,
+              { textAlign: "center", marginBottom: 14, fontSize: 14 },
+            ]}
+          >
             {dialogMessage}
           </Text>
           <View
