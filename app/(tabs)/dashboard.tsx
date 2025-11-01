@@ -1061,7 +1061,7 @@ export default function Dashboard() {
             <MaterialIcons
               name="power-settings-new"
               size={16}
-              color="#193867"
+              color="#212529"
               style={{ marginTop: 1 }}
             />
             <Text style={styles.secondaryButtonText}>Reboot device</Text>
@@ -1277,7 +1277,7 @@ const styles = StyleSheet.create({
     }),
   },
   secondaryButtonText: {
-    color: "#193867",
+    color: "#212529",
     fontSize: 12,
     fontFamily: Platform.select({
       android: "PlusJakartaSans_500Medium",
