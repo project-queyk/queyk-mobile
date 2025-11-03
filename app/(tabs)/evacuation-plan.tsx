@@ -443,13 +443,8 @@ export default function EvacuationPlan() {
           </View>
           <TouchableOpacity
             activeOpacity={0.9}
-            style={[
-              styles.button,
-              { opacity: awaitingAltitude ? 0.7 : isOffline ? 0.9 : 1 },
-            ]}
+            style={[styles.button, { opacity: isOffline ? 0.9 : 1 }]}
             onPress={awaitingAltitude ? cancelAwaiting : toggleDynamicFloorPlan}
-            disabled={awaitingAltitude}
-            aria-disabled={awaitingAltitude}
           >
             {awaitingAltitude ? (
               <>
