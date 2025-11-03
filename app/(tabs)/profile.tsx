@@ -533,13 +533,15 @@ export default function Profile() {
                 >
                   {accountData.name}
                 </Text>
-                <Text
-                  style={styles.profileEmail}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {accountData.email}
-                </Text>
+                <View style={{ maxWidth: 260 }}>
+                  <Text
+                    style={styles.profileEmail}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {accountData.email}
+                  </Text>
+                </View>
               </View>
             </View>
           </Card>
