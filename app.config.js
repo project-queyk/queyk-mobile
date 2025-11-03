@@ -24,7 +24,7 @@ module.exports = {
         backgroundColor: "#f1f3f5",
       },
       edgeToEdgeEnabled: true,
-      predictiveBackGestureEnabled: false,
+      predictiveBackGestureEnabled: true,
       package: "com.luiscabantac.Queyk",
       googleServicesFile:
         process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
@@ -33,10 +33,6 @@ module.exports = {
           action: "VIEW",
           autoVerify: true,
           data: [
-            {
-              scheme: "https",
-              host: "queyk.com",
-            },
             {
               scheme: "https",
               host: "www.queyk.com",
