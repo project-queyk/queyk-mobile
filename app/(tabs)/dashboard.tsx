@@ -9,6 +9,7 @@ import * as Sharing from "expo-sharing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  Dimensions,
   Modal,
   Platform,
   Pressable,
@@ -239,6 +240,7 @@ export default function Dashboard() {
     return `${year}-${month}-${day}`;
   }, []);
   const [cooldown, setCooldown] = useState(0);
+  const { width: screenWidth } = Dimensions.get("window");
 
   const [customDateRange, setCustomDateRange] = useState<{
     startId?: string;
@@ -612,12 +614,19 @@ export default function Dashboard() {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
+            gap: 4,
           }}
         >
           <TouchableOpacity
             style={[
               styles.selectBox,
-              { opacity: readingsDataIsLoading || isOffline ? 0.7 : 1 },
+              {
+                opacity: readingsDataIsLoading || isOffline ? 0.7 : 1,
+                maxWidth:
+                  customDateRange?.startId === customDateRange?.endId
+                    ? screenWidth - 240
+                    : screenWidth - 190,
+              },
             ]}
             activeOpacity={0.9}
             onPress={() => {
@@ -627,7 +636,11 @@ export default function Dashboard() {
             disabled={readingsDataIsLoading || isOffline}
           >
             <View
-              style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
+              style={{
+                flexDirection: "row",
+                gap: 6,
+                alignItems: "center",
+              }}
             >
               <MaterialIcons
                 name="calendar-today"
@@ -635,15 +648,27 @@ export default function Dashboard() {
                 color="#212529"
                 style={{ marginTop: 1 }}
               />
-              <Text style={styles.selectText}>
+              <Text
+                style={[styles.selectText, { flex: 1 }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {customDateRange?.startId
-                  ? `${formatDate(customDateRange.startId)} - ${
-                      customDateRange.endId
-                        ? formatDate(customDateRange.endId)
-                        : "Select end date"
-                    }`
+                  ? customDateRange.startId === customDateRange.endId
+                    ? `${formatDate(customDateRange.startId)}`
+                    : `${formatDate(customDateRange.startId)} - ${
+                        customDateRange.endId
+                          ? formatDate(customDateRange.endId)
+                          : "Select end date"
+                      }`
                   : "Select date range"}
               </Text>
+              <MaterialIcons
+                name="chevron-right"
+                size={16}
+                color="#212529"
+                style={{ marginTop: 1 }}
+              />
             </View>
           </TouchableOpacity>
           <TouchableOpacity
@@ -1351,10 +1376,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   selectText: {
+    fontSize: 14,
     fontFamily: Platform.select({
       android: "PlusJakartaSans_500Medium",
       ios: "PlusJakartaSans-Medium",
     }),
+    marginBottom: 1,
   },
   aiSummaryText: {
     marginTop: 2,
