@@ -476,14 +476,7 @@ export default function EvacuationPlan() {
           {isDynamic ? (
             <>
               <View style={styles.floorPlanImage}>
-                {isInsideBuilding === false ? (
-                  <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>
-                      You are outside the building area. Dynamic floor plan is
-                      only available while inside the building.
-                    </Text>
-                  </View>
-                ) : awaitingAltitude && altitude == null && !altitudeError ? (
+                {awaitingAltitude && altitude == null && !altitudeError ? (
                   <View style={styles.imageSkeleton} />
                 ) : altitudeError ? (
                   <View style={styles.errorContainer}>
@@ -532,6 +525,24 @@ export default function EvacuationPlan() {
                   />
                 )}
               </View>
+              {isDynamic && (
+                <View style={{ marginTop: 8 }}>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      color: "#565b60",
+                      fontFamily: Platform.select({
+                        android: "PlusJakartaSans_400Regular",
+                        ios: "PlusJakartaSans-Regular",
+                      }),
+                    }}
+                  >
+                    Debug: Lat: {latitude?.toFixed(6)}, Lon:{" "}
+                    {longitude?.toFixed(6)}, Alt: {altitude?.toFixed(2)},
+                    Inside: {isInsideBuilding ? "Yes" : "No"}
+                  </Text>
+                </View>
+              )}
             </>
           ) : (
             <>
