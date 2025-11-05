@@ -19,6 +19,7 @@ import { Dropdown } from "react-native-element-dropdown";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Dialog } from "react-native-simple-dialogs";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import useRealTimeAltitude from "@/hooks/use-realtime-altitude";
 import type { Floor } from "@/utils/floors";
@@ -29,6 +30,7 @@ import Card from "@/components/Card";
 
 export default function EvacuationPlan() {
   const { isOffline } = useNetworkStatus();
+  const { userData } = useAuth();
   const [selectedFloor, setSelectedFloor] = useState<string>(
     floors[0]?.value ?? ""
   );
@@ -525,7 +527,7 @@ export default function EvacuationPlan() {
                   />
                 )}
               </View>
-              {isDynamic && (
+              {isDynamic && userData?.role === "admin" && (
                 <View style={{ marginTop: 8 }}>
                   <Text
                     style={{
