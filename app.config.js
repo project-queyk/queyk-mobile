@@ -94,6 +94,7 @@ module.exports = {
             "Allow Queyk to use your location.",
         },
       ],
+      "expo-web-browser",
     ],
     experiments: {
       typedRoutes: true,
