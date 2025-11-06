@@ -180,10 +180,10 @@ export default function EvacuationPlan() {
 
   const buildingPolygon = useMemo(
     () => [
-      { lat: 14.7675598, lon: 121.0797802 },
-      { lat: 14.7678183, lon: 121.0797498 },
-      { lat: 14.7679425, lon: 121.079625 },
-      { lat: 14.7680478, lon: 121.0796791 },
+      { lat: 14.767674, lon: 121.079834 },
+      { lat: 14.767804, lon: 121.079832 },
+      { lat: 14.768133, lon: 121.07969 },
+      { lat: 14.767948, lon: 121.079733 },
     ],
     []
   );
@@ -542,6 +542,10 @@ export default function EvacuationPlan() {
                     Debug: Lat: {latitude?.toFixed(6)}, Lon:{" "}
                     {longitude?.toFixed(6)}, Alt: {altitude?.toFixed(2)},
                     Inside: {isInsideBuilding ? "Yes" : "No"}
+                    {"\n"}Polygon:{" "}
+                    {buildingPolygon
+                      .map((p) => `(${p.lat.toFixed(6)},${p.lon.toFixed(6)})`)
+                      .join(" | ")}
                   </Text>
                 </View>
               )}
