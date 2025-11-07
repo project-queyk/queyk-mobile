@@ -94,6 +94,14 @@ module.exports = {
             "Allow Queyk to use your location.",
         },
       ],
+      [
+        "expo-camera",
+        {
+          cameraPermission: "Allow Queyk to access your camera",
+          microphonePermission: "Allow Queyk to access your microphone",
+          recordAudioAndroid: false,
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,
