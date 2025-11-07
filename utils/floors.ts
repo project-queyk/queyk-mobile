@@ -5,6 +5,7 @@ export type Floor = {
   value: string;
   label: string;
   imageSrc: ImageSourcePropType;
+  gifSrc?: ImageSourcePropType;
   altitude?: number;
 };
 
