@@ -621,6 +621,26 @@ export default function EvacuationPlan() {
                       </TouchableOpacity>
                     </View>
                   </View>
+                ) : isInsideBuilding === false && userData?.role !== "admin" ? (
+                  // ) : isInsideBuilding === false ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>
+                      You appear to be outside the building area. Please move
+                      inside the building to use the dynamic floor plan.
+                    </Text>
+                    <View style={{ flexDirection: "row", marginTop: 8 }}>
+                      <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={handleRetry}
+                        style={[
+                          styles.secondaryButton,
+                          { paddingHorizontal: 12 },
+                        ]}
+                      >
+                        <Text style={styles.buttonTextSmall}>Retry</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 ) : (
                   <Image
                     source={currentFloor.imageSrc}
