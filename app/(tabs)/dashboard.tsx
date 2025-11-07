@@ -422,7 +422,7 @@ export default function Dashboard() {
     return "#fb2c36";
   };
 
-  const peakMagnitude = useMemo(() => {
+  const peakIntensity = useMemo(() => {
     if (!readings.length) return { value: 0, time: "--", fullDateTime: null };
     const peak = readings.reduce(
       (max, reading) => (reading.siMaximum > max.siMaximum ? reading : max),
@@ -438,7 +438,7 @@ export default function Dashboard() {
     };
   }, [readings]);
 
-  const avgMagnitude = useMemo(() => {
+  const avgIntensity = useMemo(() => {
     if (!readings.length) return "0.00";
     const sum = readings.reduce((acc, reading) => acc + reading.siAverage, 0);
     return (sum / readings.length).toFixed(2);
@@ -724,13 +724,13 @@ export default function Dashboard() {
                   <Text style={styles.cardValue}>
                     {formatSeismicMonitorDateFromFlash(dateRange) &&
                     readings.length
-                      ? peakMagnitude.value.toFixed(3)
+                      ? peakIntensity.value.toFixed(3)
                       : "--"}
                   </Text>
                   <Text style={styles.cardSubText}>
                     {formatSeismicMonitorDateFromFlash(dateRange) &&
                     readings.length
-                      ? `at ${peakMagnitude.time}`
+                      ? `at ${peakIntensity.time}`
                       : "No data"}
                   </Text>
                 </View>
@@ -751,7 +751,7 @@ export default function Dashboard() {
                   <Text style={styles.cardValue}>
                     {formatSeismicMonitorDateFromFlash(dateRange) &&
                     readings.length
-                      ? avgMagnitude
+                      ? avgIntensity
                       : "--"}
                   </Text>
                   <Text style={styles.cardSubText}>
@@ -1156,9 +1156,9 @@ export default function Dashboard() {
                     Math.max(
                       ...((
                         earthquakesData?.data as
-                          | { magnitude: number }[]
+                          | { intensity: number }[]
                           | undefined
-                      )?.map((d: { magnitude: number }) => d.magnitude) || [1]),
+                      )?.map((d: { intensity: number }) => d.intensity) || [1]),
                       1
                     ) || 1
                   }
@@ -1167,10 +1167,10 @@ export default function Dashboard() {
                   hideDataPoints
                   data={(
                     (earthquakesData?.data as
-                      | { magnitude: number; createdAt: string }[]
+                      | { intensity: number; createdAt: string }[]
                       | undefined) || []
-                  ).map((quake: { magnitude: number; createdAt: string }) => ({
-                    value: quake.magnitude,
+                  ).map((quake: { intensity: number; createdAt: string }) => ({
+                    value: quake.intensity,
                     label: new Date(quake.createdAt).toLocaleDateString(
                       "en-US",
                       {
