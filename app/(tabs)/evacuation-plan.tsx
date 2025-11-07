@@ -20,7 +20,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Dialog } from "react-native-simple-dialogs";
 
 import { useAuth } from "@/contexts/AuthContext";
-import useBarometricAltitude from "@/hooks/use-barometric-altitude";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import useRealTimeAltitude from "@/hooks/use-realtime-altitude";
 import type { Floor } from "@/utils/floors";
@@ -75,15 +74,6 @@ export default function EvacuationPlan() {
     enabled: isDynamic,
   });
 
-  const {
-    altitude: barometricAltitude,
-    pressure,
-    isAvailable: barometerAvailable,
-    calibrate: calibrateBarometer,
-  } = useBarometricAltitude({
-    enabled: isDynamic, // Always use when in dynamic mode for better accuracy
-  });
-
   const [awaitingAltitude, setAwaitingAltitude] = useState(false);
   const [altitudeError, setAltitudeError] = useState<
     null | "permissionDenied" | "unavailable"
@@ -91,24 +81,16 @@ export default function EvacuationPlan() {
   const [isInsideBuilding, setIsInsideBuilding] = useState<boolean | null>(
     null
   );
-  const [calibrationMode, setCalibrationMode] = useState(false);
-  const [altitudeReadings, setAltitudeReadings] = useState<number[]>([]);
   const altitudeTimeoutRef = useRef<number | null>(null);
   const altitudeStateRef = useRef<number | null>(altitude);
   const startAttemptRef = useRef(0);
-  const lastCalibrationTimeRef = useRef<number>(0);
-  const lastCalibrationAltitudeRef = useRef<number | null>(null);
-
-  // Use barometric altitude as primary, GPS for calibration and fallback
-  const effectiveAltitude =
-    barometricAltitude !== null ? barometricAltitude : altitude;
 
   const clearAwaitingTimeout = useCallback(() => {
     if (altitudeTimeoutRef.current != null) {
       try {
         clearTimeout(altitudeTimeoutRef.current as unknown as number);
-        altitudeTimeoutRef.current = null;
       } catch {}
+      altitudeTimeoutRef.current = null;
     }
   }, []);
 
@@ -248,7 +230,7 @@ export default function EvacuationPlan() {
   useEffect(() => {
     if (!isDynamic) return;
     if (isInsideBuilding === false) return;
-    if (effectiveAltitude == null) return;
+    if (altitude == null) return;
 
     const floorsWithAlt = floors
       .filter(
@@ -258,7 +240,7 @@ export default function EvacuationPlan() {
       .sort((a, b) => a.altitude - b.altitude);
     if (!floorsWithAlt.length) return;
 
-    if (effectiveAltitude < floorsWithAlt[0].altitude) {
+    if (altitude < floorsWithAlt[0].altitude) {
       const candidate = floorsWithAlt[0].value;
       if (candidate !== selectedFloor) setSelectedFloor(candidate);
       return;
@@ -266,9 +248,7 @@ export default function EvacuationPlan() {
 
     const found = floorsWithAlt.slice(0, -1).find((cur, i) => {
       const next = floorsWithAlt[i + 1];
-      return (
-        effectiveAltitude >= cur.altitude && effectiveAltitude < next.altitude
-      );
+      return altitude >= cur.altitude && altitude < next.altitude;
     });
     const chosen = found
       ? found.value
@@ -277,13 +257,7 @@ export default function EvacuationPlan() {
     if (chosen !== selectedFloor) {
       setSelectedFloor(chosen);
     }
-  }, [
-    isDynamic,
-    effectiveAltitude,
-    altitudeAccuracy,
-    selectedFloor,
-    isInsideBuilding,
-  ]);
+  }, [isDynamic, altitude, altitudeAccuracy, selectedFloor, isInsideBuilding]);
 
   async function toggleDynamicFloorPlan() {
     const enabling = !isDynamic;
@@ -422,102 +396,6 @@ export default function EvacuationPlan() {
     };
   }, [clearAwaitingTimeout]);
 
-  useEffect(() => {
-    if (!calibrationMode || !altitude || altitudeReadings.length >= 10) return;
-
-    // Add reading if it's stable (not changing too much from previous readings)
-    const recentReadings = altitudeReadings.slice(-3);
-    const avgRecent =
-      recentReadings.length > 0
-        ? recentReadings.reduce((a, b) => a + b, 0) / recentReadings.length
-        : altitude;
-    const diff = Math.abs(altitude - avgRecent);
-
-    if (altitudeReadings.length === 0 || diff < 0.5) {
-      // Only add if stable within 0.5m
-      setAltitudeReadings((prev) => [...prev, altitude]);
-    }
-  }, [altitude, calibrationMode, altitudeReadings]);
-
-  useEffect(() => {
-    if (calibrationMode && altitudeReadings.length >= 10) {
-      // Here you could save to a config file or display the result
-      setCalibrationMode(false);
-      setAltitudeReadings([]);
-    }
-  }, [altitudeReadings, calibrationMode]);
-
-  // Automatic calibration of barometric sensor
-  useEffect(() => {
-    if (
-      !isDynamic ||
-      !barometerAvailable ||
-      altitude == null ||
-      barometricAltitude == null
-    )
-      return;
-
-    const now = Date.now();
-    const timeSinceLastCalibration = now - lastCalibrationTimeRef.current;
-
-    // Don't recalibrate too frequently (minimum 30 seconds between calibrations)
-    if (timeSinceLastCalibration < 30000) return;
-
-    // Strategy 1: Recalibrate when outside building (GPS is more accurate outdoors)
-    if (isInsideBuilding === false) {
-      const gpsAltitude = altitude;
-      const barometricOffset = gpsAltitude - barometricAltitude;
-
-      // Only recalibrate if offset is significant (> 3m difference) and reasonable (< 20m)
-      if (Math.abs(barometricOffset) > 3 && Math.abs(barometricOffset) < 20) {
-        calibrateBarometer(gpsAltitude, pressure || undefined);
-        lastCalibrationTimeRef.current = now;
-        lastCalibrationAltitudeRef.current = gpsAltitude;
-        console.log(
-          `Auto-calibrated outdoors: offset ${barometricOffset.toFixed(2)}m`
-        );
-      }
-      return;
-    }
-
-    // Strategy 2: Recalibrate when on ground floor (known reference point)
-    if (selectedFloor === "ground" && isInsideBuilding === true) {
-      const groundFloorAltitude = floors.find(
-        (f) => f.value === "ground"
-      )?.altitude;
-      if (groundFloorAltitude != null) {
-        const barometricOffset = groundFloorAltitude - barometricAltitude;
-
-        // Only recalibrate if barometric reading is significantly off (> 5m difference)
-        if (Math.abs(barometricOffset) > 5) {
-          // Use GPS to validate the calibration
-          const gpsAltitude = altitude;
-
-          // If GPS is reasonably close to expected ground floor altitude, proceed
-          if (Math.abs(gpsAltitude - groundFloorAltitude) < 15) {
-            calibrateBarometer(groundFloorAltitude, pressure || undefined);
-            lastCalibrationTimeRef.current = now;
-            lastCalibrationAltitudeRef.current = groundFloorAltitude;
-            console.log(
-              `Auto-calibrated on ground floor: offset ${barometricOffset.toFixed(
-                2
-              )}m`
-            );
-          }
-        }
-      }
-    }
-  }, [
-    altitude,
-    barometricAltitude,
-    pressure,
-    isInsideBuilding,
-    selectedFloor,
-    isDynamic,
-    barometerAvailable,
-    calibrateBarometer,
-  ]);
-
   return (
     <SafeAreaView
       edges={["left", "right"]}
@@ -593,25 +471,10 @@ export default function EvacuationPlan() {
                 }),
               }}
             >
-              Offline: Using barometric sensor for floor detection. GPS
-              unavailable.
+              Offline: GPS works without internet but it may take longer to get
+              an initial location.
             </Text>
-          ) : (
-            <Text
-              style={{
-                marginTop: 8,
-                fontSize: 12,
-                color: "#565b60",
-                fontFamily: Platform.select({
-                  android: "PlusJakartaSans_400Regular",
-                  ios: "PlusJakartaSans-Regular",
-                }),
-              }}
-            >
-              Using barometric sensor for accurate indoor altitude. GPS used for
-              calibration.
-            </Text>
-          )}
+          ) : null}
           {isDynamic ? (
             <>
               <View style={styles.floorPlanImage}>
@@ -679,47 +542,11 @@ export default function EvacuationPlan() {
                     Debug: Lat: {latitude?.toFixed(6)}, Lon:{" "}
                     {longitude?.toFixed(6)}, Alt: {altitude?.toFixed(2)},
                     Inside: {isInsideBuilding ? "Yes" : "No"}
-                    {"\n"}Using:{" "}
-                    {barometricAltitude !== null ? "Barometric" : "GPS"} (
-                    {effectiveAltitude?.toFixed(2)}m)
-                    {"\n"}Barometric: {barometricAltitude?.toFixed(2)}m (
-                    {pressure?.toFixed(1)} hPa)
-                    {"\n"}Pressure: {pressure?.toFixed(1)} hPa ← COLLECT THIS
-                    PER FLOOR
-                    {"\n"}Target Floor: {selectedFloor} (
-                    {floors
-                      .find((f) => f.value === selectedFloor)
-                      ?.altitude?.toFixed(1)}
-                    m)
                     {"\n"}Polygon:{" "}
                     {buildingPolygon
                       .map((p) => `(${p.lat.toFixed(6)},${p.lon.toFixed(6)})`)
                       .join(" | ")}
-                    {isOffline &&
-                      barometricAltitude !== null &&
-                      `\nBarometric: ${barometricAltitude?.toFixed(
-                        2
-                      )}m (${pressure?.toFixed(1)} hPa)`}
-                    {"\n"}Last Cal:{" "}
-                    {lastCalibrationTimeRef.current > 0
-                      ? new Date(
-                          lastCalibrationTimeRef.current
-                        ).toLocaleTimeString()
-                      : "Never"}
                   </Text>
-                  {calibrationMode && (
-                    <View style={{ marginTop: 8 }}>
-                      <Text style={{ fontSize: 10, color: "#565b60" }}>
-                        Current: {altitude?.toFixed(2)} | Avg:{" "}
-                        {altitudeReadings.length > 0
-                          ? (
-                              altitudeReadings.reduce((a, b) => a + b, 0) /
-                              altitudeReadings.length
-                            ).toFixed(2)
-                          : "N/A"}
-                      </Text>
-                    </View>
-                  )}
                 </View>
               )}
             </>
@@ -1103,51 +930,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     paddingHorizontal: 12,
     paddingVertical: 8,
-  },
-  debugContainer: {
-    backgroundColor: "#ffffff",
-    borderRadius: 8,
-    padding: 16,
-    marginTop: 12,
-    borderColor: "#e5e5e5",
-    borderWidth: 1,
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#193867",
-    marginBottom: 8,
-  },
-  debugText: {
-    fontSize: 12,
-    color: "#565b60",
-    marginBottom: 4,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  collectButton: {
-    backgroundColor: "#e1f5fe",
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginRight: 8,
-    alignItems: "center",
-  },
-  clearButton: {
-    backgroundColor: "#ffebee",
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  saveButton: {
-    backgroundColor: "#c8e6c9",
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginTop: 12,
-    alignItems: "center",
   },
 });
