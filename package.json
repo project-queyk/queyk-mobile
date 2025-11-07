@@ -57,7 +57,6 @@
     "react-native-simple-dialogs": "^2.1.1",
     "react-native-svg": "15.12.1",
     "react-native-web": "~0.21.0",
-    "react-native-wifi-reborn": "^4.13.6",
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {

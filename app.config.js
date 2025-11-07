@@ -95,7 +95,6 @@ module.exports = {
         },
       ],
       "expo-web-browser",
-      "react-native-wifi-reborn",
     ],
     experiments: {
       typedRoutes: true,
