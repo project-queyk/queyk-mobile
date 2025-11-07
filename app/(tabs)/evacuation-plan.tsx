@@ -178,34 +178,32 @@ export default function EvacuationPlan() {
     })();
   }
 
-  const buildingPolygon = useMemo(
-    () => [
-      { lat: 14.767674, lon: 121.079834 },
-      { lat: 14.767804, lon: 121.079832 },
-      { lat: 14.768133, lon: 121.07969 },
-      { lat: 14.767948, lon: 121.079733 },
-    ],
+  const buildingBounds = useMemo(
+    () => ({
+      minLat: 14.767674,
+      maxLat: 14.768133,
+      minLon: 121.07969,
+      maxLon: 121.079834,
+    }),
     []
   );
 
-  function pointInPolygon(
-    point: { lat: number; lon: number },
-    polygon: { lat: number; lon: number }[]
-  ) {
-    const x = point.lon;
-    const y = point.lat;
-    let inside = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i].lon;
-      const yi = polygon[i].lat;
-      const xj = polygon[j].lon;
-      const yj = polygon[j].lat;
-      const intersect =
-        yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-      if (intersect) inside = !inside;
-    }
-    return inside;
-  }
+  const isPointInBuilding = useCallback(
+    (point: { lat: number; lon: number }) => {
+      return (
+        point.lat >= buildingBounds.minLat &&
+        point.lat <= buildingBounds.maxLat &&
+        point.lon >= buildingBounds.minLon &&
+        point.lon <= buildingBounds.maxLon
+      );
+    },
+    [
+      buildingBounds.maxLat,
+      buildingBounds.maxLon,
+      buildingBounds.minLat,
+      buildingBounds.minLon,
+    ]
+  );
 
   useEffect(() => {
     if (!isDynamic) {
@@ -217,15 +215,12 @@ export default function EvacuationPlan() {
       return;
     }
     try {
-      const inside = pointInPolygon(
-        { lat: latitude, lon: longitude },
-        buildingPolygon
-      );
+      const inside = isPointInBuilding({ lat: latitude, lon: longitude });
       setIsInsideBuilding(inside);
     } catch {
       setIsInsideBuilding(null);
     }
-  }, [isDynamic, latitude, longitude, buildingPolygon]);
+  }, [isDynamic, latitude, longitude, isPointInBuilding]);
 
   useEffect(() => {
     if (!isDynamic) return;
@@ -542,10 +537,6 @@ export default function EvacuationPlan() {
                     Debug: Lat: {latitude?.toFixed(6)}, Lon:{" "}
                     {longitude?.toFixed(6)}, Alt: {altitude?.toFixed(2)},
                     Inside: {isInsideBuilding ? "Yes" : "No"}
-                    {"\n"}Polygon:{" "}
-                    {buildingPolygon
-                      .map((p) => `(${p.lat.toFixed(6)},${p.lon.toFixed(6)})`)
-                      .join(" | ")}
                   </Text>
                 </View>
               )}
