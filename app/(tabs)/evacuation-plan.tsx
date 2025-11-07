@@ -1,4 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system/legacy";
 import { Image } from "expo-image";
 import * as Location from "expo-location";
@@ -8,7 +9,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,6 +31,79 @@ import { safetyGuidelines } from "@/utils/safety-guidelines";
 
 import Card from "@/components/Card";
 
+function CameraModal({
+  visible,
+  onClose,
+  onFloorSelect,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onFloorSelect: (floorValue: string) => void;
+}) {
+  return (
+    <Modal
+      animationType="slide"
+      transparent={false}
+      visible={visible}
+      onRequestClose={onClose}
+      presentationStyle="pageSheet"
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            paddingHorizontal: 20,
+            paddingVertical: 15,
+            borderBottomWidth: 1,
+            borderBottomColor: "#e5e5e5",
+          }}
+        >
+          <Pressable onPress={onClose}>
+            <Text style={styles.confirmButton}>Close</Text>
+          </Pressable>
+        </View>
+
+        <View
+          style={{
+            flex: 1,
+            paddingHorizontal: 20,
+            paddingTop: 20,
+          }}
+        >
+          <Text style={styles.headerText}>Scan QR Code</Text>
+          <View
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <CameraView
+              style={styles.camera}
+              facing="back"
+              barcodeScannerSettings={{
+                barcodeTypes: ["qr"],
+              }}
+              onBarcodeScanned={({ data }) => {
+                try {
+                  const floorWithUuid = floors.find(
+                    (floor) => floor.id === data
+                  );
+                  if (floorWithUuid) {
+                    onFloorSelect(floorWithUuid.value);
+                    onClose();
+                  }
+                } catch {}
+              }}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 export default function EvacuationPlan() {
   const { isOffline } = useNetworkStatus();
   const { userData } = useAuth();
@@ -39,6 +115,11 @@ export default function EvacuationPlan() {
 
   const [dialogVisible, setDialogVisible] = useState(false);
   const [dialogType, setDialogType] = useState<string | null>(null);
+
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [isCameraVisible, setIsCameraVisible] = useState(false);
+
+  const isCameraPermissionGranted = Boolean(cameraPermission?.granted);
 
   const currentFloor: Floor =
     floors.find((floor) => floor.value === selectedFloor) ?? floors[0];
@@ -454,6 +535,33 @@ export default function EvacuationPlan() {
               </Text>
             )}
           </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            style={[
+              styles.secondaryButton,
+              {
+                opacity: isOffline ? 0.7 : 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                marginTop: 12,
+              },
+            ]}
+            onPress={() => {
+              requestCameraPermission();
+              if (isCameraPermissionGranted) {
+                setIsCameraVisible((prev) => !prev);
+              }
+            }}
+            aria-disabled={isOffline}
+            disabled={isOffline}
+          >
+            <MaterialIcons name="qr-code-scanner" size={16} color="#212529" />
+            <Text style={[styles.buttonText, { color: "#212529" }]}>
+              Scan a QR Code
+            </Text>
+          </TouchableOpacity>
           {isOffline ? (
             <Text
               style={{
@@ -635,6 +743,16 @@ export default function EvacuationPlan() {
           Risk Reduction and Management Act (RA 10121)
         </Text>
       </ScrollView>
+      <CameraModal
+        visible={isCameraVisible && isCameraPermissionGranted}
+        onClose={() => {
+          setIsCameraVisible(false);
+        }}
+        onFloorSelect={(floorValue) => {
+          setSelectedFloor(floorValue);
+          setIsDynamic(false);
+        }}
+      />
       <Dialog
         visible={dialogVisible}
         title={
@@ -698,7 +816,6 @@ export default function EvacuationPlan() {
                   } catch {}
                   setDialogVisible(false);
                 } else if (dialogType === "enableLocation") {
-                  // Continue logic
                   try {
                     setAltitudeError(null);
                     startAwaitingAltitude(4000, true);
@@ -728,11 +845,9 @@ export default function EvacuationPlan() {
                     if (currentAfter.canAskAgain === false) {
                       setAltitudeError("permissionDenied");
                       setDialogType("locationPermissionNeeded");
-                      // setDialogVisible(true); already visible
                     } else {
                       setAltitudeError("permissionDenied");
                       setDialogType("permissionDenied");
-                      // setDialogVisible(true);
                     }
                   } catch {}
                 } else if (dialogType === "locationPermissionNeeded") {
@@ -741,7 +856,6 @@ export default function EvacuationPlan() {
                   } catch {}
                   setDialogVisible(false);
                 } else if (dialogType === "permissionDenied") {
-                  // Retry logic
                   try {
                     startAwaitingAltitude(4000, false);
                     const permRetry = await ensureWatcherStarted?.({
@@ -921,5 +1035,35 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  modalLabel: {
+    color: "#565b60ff",
+    marginVertical: 8,
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_500Medium",
+      ios: "PlusJakartaSans-Medium",
+    }),
+  },
+  confirmButton: {
+    color: "#193867",
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_600SemiBold",
+      ios: "PlusJakartaSans-SemiBold",
+    }),
+  },
+  cancelButton: {
+    color: "#193867",
+    fontFamily: Platform.select({
+      android: "PlusJakartaSans_500Medium",
+      ios: "PlusJakartaSans-Medium",
+    }),
+  },
+  camera: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    height: "95%",
+    zIndex: 1000,
+    borderRadius: 16,
   },
 });
