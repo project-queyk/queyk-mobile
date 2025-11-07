@@ -1,5 +1,4 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import * as Clipboard from "expo-clipboard";
 import * as FileSystem from "expo-file-system/legacy";
 import { Image } from "expo-image";
 import * as Location from "expo-location";
@@ -22,15 +21,11 @@ import { Dialog } from "react-native-simple-dialogs";
 
 import { useAuth } from "@/contexts/AuthContext";
 import useBarometricAltitude from "@/hooks/use-barometric-altitude";
-import { useFloorFusion } from "@/hooks/use-floor-fusion";
-import { useFloorTransition } from "@/hooks/use-floor-transition";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import useRealTimeAltitude from "@/hooks/use-realtime-altitude";
-import { useWifiFingerprint } from "@/hooks/use-wifi-fingerprint";
 import type { Floor } from "@/utils/floors";
 import { floors } from "@/utils/floors";
 import { safetyGuidelines } from "@/utils/safety-guidelines";
-import { loadWifiFingerprints } from "@/utils/wifi-storage";
 
 import Card from "@/components/Card";
 
@@ -46,39 +41,8 @@ export default function EvacuationPlan() {
   const [dialogVisible, setDialogVisible] = useState(false);
   const [dialogType, setDialogType] = useState<string | null>(null);
 
-  // IMU and Wi-Fi hooks
-  const { lastAccelAvg, lastGyroAvg } = useFloorTransition();
-  const {
-    fingerprint,
-    scanWifi,
-    loading: wifiLoading,
-    error: wifiError,
-  } = useWifiFingerprint();
-  const {
-    currentFloor: fusedFloor,
-    imuConfidence,
-    wifiMatch,
-  } = useFloorFusion(floors);
-  const [adminMode, setAdminMode] = useState(false);
-  const [storedFloors, setStoredFloors] = useState<Floor[]>([]);
-
   const currentFloor: Floor =
     floors.find((floor) => floor.value === selectedFloor) ?? floors[0];
-
-  useEffect(() => {
-    const loadStored = async () => {
-      const stored = await loadWifiFingerprints();
-      setStoredFloors(stored);
-    };
-    loadStored();
-  }, []);
-
-  // Update selectedFloor from fusion when in dynamic mode
-  useEffect(() => {
-    if (isDynamic && fusedFloor) {
-      setSelectedFloor(fusedFloor.value);
-    }
-  }, [fusedFloor, isDynamic]);
 
   async function downloadEvacuationPlan() {
     try {
@@ -554,8 +518,6 @@ export default function EvacuationPlan() {
     calibrateBarometer,
   ]);
 
-  const [copySuccess, setCopySuccess] = useState(false);
-
   return (
     <SafeAreaView
       edges={["left", "right"]}
@@ -586,31 +548,18 @@ export default function EvacuationPlan() {
               }}
             >
               <Text style={styles.headerText}>Evacuation Floor Plans</Text>
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  style={[
-                    styles.secondaryButton,
-                    { opacity: isOffline ? 0.7 : 1 },
-                  ]}
-                  onPress={downloadEvacuationPlan}
-                  aria-disabled={isOffline}
-                  disabled={isOffline}
-                >
-                  <MaterialIcons name="get-app" size={16} color="#212529" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  style={styles.secondaryButton}
-                  onPress={() => setAdminMode(!adminMode)}
-                >
-                  <MaterialIcons
-                    name="admin-panel-settings"
-                    size={16}
-                    color="#212529"
-                  />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                style={[
+                  styles.secondaryButton,
+                  { opacity: isOffline ? 0.7 : 1 },
+                ]}
+                onPress={downloadEvacuationPlan}
+                aria-disabled={isOffline}
+                disabled={isOffline}
+              >
+                <MaterialIcons name="get-app" size={16} color="#212529" />
+              </TouchableOpacity>
             </View>
             <Text style={styles.headerDescription}>
               Select a floor to view evacuation routes
@@ -833,154 +782,6 @@ export default function EvacuationPlan() {
             </>
           )}
         </Card>
-        {adminMode && (
-          <Card>
-            <View style={styles.debugContainer}>
-              <Text style={styles.debugTitle}>
-                Wi-Fi Fingerprint Collection
-              </Text>
-              <Text style={styles.debugText}>
-                Current Floor: {currentFloor.label}
-              </Text>
-              <Text style={styles.debugText}>
-                Fingerprint: {Object.keys(fingerprint).length} APs
-              </Text>
-              {wifiError && (
-                <Text style={styles.debugText}>Error: {wifiError}</Text>
-              )}
-              <View style={{ marginTop: 12 }}>
-                <Text style={styles.debugTitle}>
-                  Data to Store for {currentFloor.label}:
-                </Text>
-                <Text style={styles.debugText}>
-                  wifiFingerprint: {JSON.stringify(fingerprint, null, 2)}
-                </Text>
-                <Text style={styles.debugText}>
-                  altitude: {currentFloor.altitude ?? "Not set"}
-                </Text>
-              </View>
-              <View style={{ marginTop: 12 }}>
-                <Text style={styles.debugTitle}>
-                  Already Stored for {currentFloor.label}:
-                </Text>
-                {(() => {
-                  const storedFloor = storedFloors.find(
-                    (f) => f.value === selectedFloor
-                  );
-                  return storedFloor ? (
-                    <>
-                      <Text style={styles.debugText}>
-                        wifiFingerprint:{" "}
-                        {storedFloor.wifiFingerprint
-                          ? Object.keys(storedFloor.wifiFingerprint).length +
-                            " APs"
-                          : "None"}
-                      </Text>
-                      <Text style={styles.debugText}>
-                        altitude: {storedFloor.altitude ?? "Not set"}
-                      </Text>
-                    </>
-                  ) : (
-                    <Text style={styles.debugText}>No data stored yet</Text>
-                  );
-                })()}
-              </View>
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={styles.collectButton}
-                  onPress={() => scanWifi()}
-                  disabled={wifiLoading}
-                >
-                  <Text style={{ color: "#000", fontWeight: "bold" }}>
-                    {wifiLoading ? "Scanning..." : "Scan Wi-Fi"}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.collectButton, { backgroundColor: "#fff3e0" }]}
-                  onPress={async () => {
-                    const fingerprintText = JSON.stringify(
-                      fingerprint,
-                      null,
-                      2
-                    );
-                    await Clipboard.setStringAsync(fingerprintText);
-                    setCopySuccess(true);
-                    setTimeout(() => setCopySuccess(false), 2000);
-                  }}
-                  disabled={Object.keys(fingerprint).length === 0}
-                >
-                  <Text style={{ color: "#000", fontWeight: "bold" }}>
-                    {copySuccess ? "Copied!" : "Copy Data"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.debugText}>
-                Stored Floors: {storedFloors.length}
-              </Text>
-              <Text style={styles.debugText}>
-                IMU: Accel {lastAccelAvg.toFixed(2)}, Gyro{" "}
-                {lastGyroAvg.toFixed(2)}, Conf {imuConfidence.toFixed(2)}
-              </Text>
-              <Text style={styles.debugText}>
-                Wi-Fi APs: {Object.keys(fingerprint).length}
-              </Text>
-              <Text style={styles.debugText}>
-                Wi-Fi Match: {wifiMatch?.label || "None"}
-              </Text>
-              <Text style={styles.debugText}>
-                Fused Floor: {fusedFloor?.label || "None"}
-              </Text>
-              <Text style={styles.debugText}>Using the Floor Plan:</Text>
-              <Text style={styles.debugText}>
-                • Wi-Fi must be ENABLED for scanning
-              </Text>
-              <Text style={styles.debugText}>
-                • No Wi-Fi connection required
-              </Text>
-              <Text style={styles.debugText}>
-                • App scans signals to determine floor
-              </Text>
-              <Text style={styles.debugText}>• Works completely offline</Text>
-              <Text style={styles.debugText}>Wi-Fi Collection Tips:</Text>
-              <Text style={styles.debugText}>
-                • Collect from multiple spots per floor for best accuracy
-              </Text>
-              <Text style={styles.debugText}>
-                • Current location may affect RSSI values
-              </Text>
-              <Text style={styles.debugText}>
-                • More APs = better floor identification
-              </Text>
-              <Text style={styles.debugText}>Collection Spots per Floor:</Text>
-              <Text style={styles.debugText}>
-                • Minimum: 3-5 spots per floor
-              </Text>
-              <Text style={styles.debugText}>
-                • Cover: corners, center, near stairs/elevators
-              </Text>
-              <Text style={styles.debugText}>• Large floors: 6-8 spots</Text>
-              <Text style={styles.debugText}>
-                • More spots = better accuracy
-              </Text>
-              <Text style={styles.debugText}>
-                How to Combine Multiple Spots:
-              </Text>
-              <Text style={styles.debugText}>
-                • Collect from 3-5 spots per floor
-              </Text>
-              <Text style={styles.debugText}>
-                • Average RSSI values for same APs
-              </Text>
-              <Text style={styles.debugText}>
-                • Screenshot each spot&apos;s data
-              </Text>
-              <Text style={styles.debugText}>
-                • Or use &quot;Copy Data&quot; button
-              </Text>
-            </View>
-          </Card>
-        )}
         <View>
           <Card>
             <View
@@ -1326,10 +1127,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 8,
-    gap: 8,
   },
   collectButton: {
     backgroundColor: "#e1f5fe",
+    flex: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginRight: 8,
+    alignItems: "center",
+  },
+  clearButton: {
+    backgroundColor: "#ffebee",
     flex: 1,
     borderRadius: 8,
     paddingVertical: 12,
