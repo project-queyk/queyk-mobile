@@ -234,10 +234,10 @@ export default function EvacuationPlan() {
 
   const buildingPolygon = useMemo(
     () => [
-      { lat: 14.767674, lon: 121.079934 },
-      { lat: 14.767804, lon: 121.079932 },
-      { lat: 14.768133, lon: 121.07979 },
-      { lat: 14.767948, lon: 121.079833 },
+      { lat: 14.767674, lon: 121.079834 },
+      { lat: 14.767804, lon: 121.079832 },
+      { lat: 14.768133, lon: 121.07969 },
+      { lat: 14.767948, lon: 121.079733 },
     ],
     []
   );
