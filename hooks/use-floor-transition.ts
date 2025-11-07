@@ -53,11 +53,17 @@ export const useFloorTransition = () => {
           const isStairMotion = accelVariance > 2 && avgGyro > 0.5;
 
           if (isStairMotion && Date.now() - lastDetectionTime.current > 2000) {
-            // Debounce 2s
-            const delta = avgAccel > 12 ? 1 : avgAccel < 8 ? -1 : 0; // Rough thresholds
-            if (delta !== 0) {
+            // Calculate confidence based on motion strength
+            const motionStrength = Math.min(accelVariance / 5, 1); // Normalize
+            const gyroStrength = Math.min(avgGyro / 2, 1);
+            const calculatedConfidence = (motionStrength + gyroStrength) / 2;
+
+            const delta = avgAccel > 12 ? 1 : avgAccel < 8 ? -1 : 0;
+
+            if (delta !== 0 && calculatedConfidence > 0.3) {
+              // Apply all detections with confidence > 0.3
               setFloorDelta((prev) => prev + delta);
-              setConfidence(0.8); // Placeholder confidence
+              setConfidence(calculatedConfidence);
               lastDetectionTime.current = Date.now();
             }
           }
@@ -77,5 +83,11 @@ export const useFloorTransition = () => {
     setConfidence(0);
   };
 
-  return { floorDelta, consumeDelta, confidence, lastAccelAvg, lastGyroAvg };
+  return {
+    floorDelta,
+    consumeDelta,
+    confidence,
+    lastAccelAvg,
+    lastGyroAvg,
+  };
 };

@@ -18,7 +18,6 @@ import {
 } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Dialog } from "react-native-simple-dialogs";
 
 import { useAuth } from "@/contexts/AuthContext";
 import useBarometricAltitude from "@/hooks/use-barometric-altitude";
@@ -42,9 +41,6 @@ export default function EvacuationPlan() {
   );
   const [isFocus, setIsFocus] = useState(false);
   const [isDynamic, setIsDynamic] = useState(false);
-
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [dialogType, setDialogType] = useState<string | null>(null);
 
   // IMU and Wi-Fi hooks
   const { lastAccelAvg, lastGyroAvg } = useFloorTransition();
@@ -344,8 +340,8 @@ export default function EvacuationPlan() {
     try {
       const servicesEnabled = await Location.hasServicesEnabledAsync();
       if (!servicesEnabled) {
-        setDialogType("locationServicesDisabled");
-        setDialogVisible(true);
+        setAltitudeError("unavailable");
+        setAwaitingAltitude(false);
         return;
       }
 
@@ -387,9 +383,6 @@ export default function EvacuationPlan() {
           setIsDynamic(false);
         }
       }
-
-      setDialogType("enableLocation");
-      setDialogVisible(true);
     } catch {}
   }
 
@@ -1016,169 +1009,6 @@ export default function EvacuationPlan() {
           Risk Reduction and Management Act (RA 10121)
         </Text>
       </ScrollView>
-      <Dialog
-        visible={dialogVisible}
-        title={
-          dialogType === "locationServicesDisabled"
-            ? "Location services disabled"
-            : dialogType === "enableLocation"
-            ? "Enable Location"
-            : dialogType === "locationPermissionNeeded"
-            ? "Location permission needed"
-            : dialogType === "permissionDenied"
-            ? "Permission denied"
-            : ""
-        }
-        titleStyle={[styles.headerText, { textAlign: "center" }]}
-        dialogStyle={styles.dialog}
-        contentStyle={{ paddingTop: 8 }}
-        onTouchOutside={() => setDialogVisible(false)}
-        onRequestClose={() => setDialogVisible(false)}
-        contentInsetAdjustmentBehavior="never"
-        animationType="fade"
-      >
-        <View>
-          <Text style={[styles.settingsText, { textAlign: "center" }]}>
-            {dialogType === "locationServicesDisabled"
-              ? "Your device's location services are turned off. Please enable them to use the dynamic floor plan."
-              : dialogType === "enableLocation"
-              ? "Allow this app to access your device location so we can show a dynamic floor plan based on your altitude."
-              : dialogType === "locationPermissionNeeded"
-              ? "To show a live dynamic floor plan the app needs Location access. Please enable it in your device settings."
-              : dialogType === "permissionDenied"
-              ? "Location permission was denied. You can retry to grant it."
-              : ""}
-          </Text>
-          <View
-            style={{
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 10,
-              marginTop: 14,
-            }}
-          >
-            <TouchableOpacity
-              activeOpacity={0.9}
-              style={[
-                styles.button,
-                {
-                  backgroundColor:
-                    dialogType === "locationServicesDisabled" ||
-                    dialogType === "locationPermissionNeeded"
-                      ? "#193867"
-                      : dialogType === "permissionDenied"
-                      ? "#193867"
-                      : "#193867",
-                  marginBottom: 0,
-                },
-              ]}
-              onPress={async () => {
-                if (dialogType === "locationServicesDisabled") {
-                  try {
-                    Linking.openSettings();
-                  } catch {}
-                  setDialogVisible(false);
-                } else if (dialogType === "enableLocation") {
-                  // Continue logic
-                  try {
-                    setAltitudeError(null);
-                    startAwaitingAltitude(4000, true);
-                    setIsDynamic(true);
-                    const result = await ensureWatcherStarted?.({
-                      promptIfNeeded: true,
-                      attempts: isOffline ? 4 : 2,
-                      waitForAltitudeMs: isOffline ? 14000 : 4000,
-                    });
-                    clearAwaitingTimeout();
-                    if (result?.success) {
-                      try {
-                        await SecureStore.setItemAsync(
-                          "DYNAMIC_FLOOR_PLAN_ENABLED",
-                          "true"
-                        );
-                      } catch {}
-                      setDialogVisible(false);
-                      return;
-                    }
-
-                    setAwaitingAltitude(false);
-                    setIsDynamic(false);
-
-                    const currentAfter =
-                      await Location.getForegroundPermissionsAsync();
-                    if (currentAfter.canAskAgain === false) {
-                      setAltitudeError("permissionDenied");
-                      setDialogType("locationPermissionNeeded");
-                      // setDialogVisible(true); already visible
-                    } else {
-                      setAltitudeError("permissionDenied");
-                      setDialogType("permissionDenied");
-                      // setDialogVisible(true);
-                    }
-                  } catch {}
-                } else if (dialogType === "locationPermissionNeeded") {
-                  try {
-                    Linking.openSettings();
-                  } catch {}
-                  setDialogVisible(false);
-                } else if (dialogType === "permissionDenied") {
-                  // Retry logic
-                  try {
-                    startAwaitingAltitude(4000, false);
-                    const permRetry = await ensureWatcherStarted?.({
-                      promptIfNeeded: true,
-                      attempts: isOffline ? 4 : 2,
-                      waitForAltitudeMs: isOffline ? 14000 : 4000,
-                    });
-                    clearAwaitingTimeout();
-                    if (permRetry?.success) {
-                      setIsDynamic(true);
-                      try {
-                        await SecureStore.setItemAsync(
-                          "DYNAMIC_FLOOR_PLAN_ENABLED",
-                          "true"
-                        );
-                      } catch {}
-                      setDialogVisible(false);
-                      return;
-                    }
-                    setAwaitingAltitude(false);
-                    setAltitudeError("permissionDenied");
-                    setDialogVisible(false);
-                  } catch {
-                    clearAwaitingTimeout();
-                    setAwaitingAltitude(false);
-                    setDialogVisible(false);
-                  }
-                }
-              }}
-            >
-              <Text style={styles.buttonText}>
-                {dialogType === "locationServicesDisabled" ||
-                dialogType === "locationPermissionNeeded"
-                  ? "Open Settings"
-                  : dialogType === "enableLocation"
-                  ? "Continue"
-                  : dialogType === "permissionDenied"
-                  ? "Retry"
-                  : "Continue"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.9}
-              style={[
-                styles.outlineButton,
-                { width: "100%", alignItems: "center" },
-              ]}
-              onPress={() => setDialogVisible(false)}
-            >
-              <Text style={[styles.buttonText, { color: "#000" }]}>
-                {dialogType === "permissionDenied" ? "OK" : "Cancel"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Dialog>
     </SafeAreaView>
   );
 }
