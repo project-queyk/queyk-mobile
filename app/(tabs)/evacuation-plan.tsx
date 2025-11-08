@@ -316,22 +316,19 @@ export default function EvacuationPlan() {
       .sort((a, b) => a.altitude - b.altitude);
     if (!floorsWithAlt.length) return;
 
-    if (altitude < floorsWithAlt[0].altitude) {
-      const candidate = floorsWithAlt[0].value;
-      if (candidate !== selectedFloor) setSelectedFloor(candidate);
-      return;
+    let closestFloor = floorsWithAlt[0];
+    let minDistance = Math.abs(altitude - floorsWithAlt[0].altitude);
+
+    for (let i = 1; i < floorsWithAlt.length; i++) {
+      const distance = Math.abs(altitude - floorsWithAlt[i].altitude);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestFloor = floorsWithAlt[i];
+      }
     }
 
-    const found = floorsWithAlt.slice(0, -1).find((cur, i) => {
-      const next = floorsWithAlt[i + 1];
-      return altitude >= cur.altitude && altitude < next.altitude;
-    });
-    const chosen = found
-      ? found.value
-      : floorsWithAlt[floorsWithAlt.length - 1].value;
-
-    if (chosen !== selectedFloor) {
-      setSelectedFloor(chosen);
+    if (closestFloor.value !== selectedFloor) {
+      setSelectedFloor(closestFloor.value);
     }
   }, [isDynamic, altitude, altitudeAccuracy, selectedFloor, isInsideBuilding]);
 
