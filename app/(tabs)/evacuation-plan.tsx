@@ -144,7 +144,6 @@ export default function EvacuationPlan() {
 
   const {
     altitude,
-    altitudeAccuracy,
     latitude,
     longitude,
     requestPermission,
@@ -316,21 +315,38 @@ export default function EvacuationPlan() {
       .sort((a, b) => a.altitude - b.altitude);
     if (!floorsWithAlt.length) return;
 
-    let closestFloor = floorsWithAlt[0];
-    let minDistance = Math.abs(altitude - floorsWithAlt[0].altitude);
+    let selectedFloorValue = floorsWithAlt[0].value;
 
-    for (let i = 1; i < floorsWithAlt.length; i++) {
-      const distance = Math.abs(altitude - floorsWithAlt[i].altitude);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestFloor = floorsWithAlt[i];
+    for (let i = 0; i < floorsWithAlt.length; i++) {
+      const currentFloor = floorsWithAlt[i];
+      const nextFloor = floorsWithAlt[i + 1];
+
+      if (i === 0 && altitude <= currentFloor.altitude + 1.5) {
+        selectedFloorValue = currentFloor.value;
+        break;
+      } else if (!nextFloor) {
+        selectedFloorValue = currentFloor.value;
+        break;
+      } else {
+        const midpoint = (currentFloor.altitude + nextFloor.altitude) / 2;
+
+        if (altitude > currentFloor.altitude - 1.0 && altitude <= midpoint) {
+          selectedFloorValue = currentFloor.value;
+          break;
+        } else if (
+          altitude > midpoint &&
+          altitude <= nextFloor.altitude + 1.5
+        ) {
+          selectedFloorValue = nextFloor.value;
+          break;
+        }
       }
     }
 
-    if (closestFloor.value !== selectedFloor) {
-      setSelectedFloor(closestFloor.value);
+    if (selectedFloorValue !== selectedFloor) {
+      setSelectedFloor(selectedFloorValue);
     }
-  }, [isDynamic, altitude, altitudeAccuracy, selectedFloor, isInsideBuilding]);
+  }, [isDynamic, altitude, isInsideBuilding, selectedFloor]);
 
   async function toggleDynamicFloorPlan() {
     const enabling = !isDynamic;
