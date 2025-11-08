@@ -3,6 +3,7 @@ import {
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import { Image } from "expo-image";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import {
@@ -120,6 +121,25 @@ export default function SignInScreen() {
           <Text style={styles.buttonText}>Sign in with Google</Text>
         </TouchableOpacity>
       </Card>
+      <Text
+        style={[
+          styles.subText,
+          {
+            position: "absolute",
+            bottom: "10%",
+            fontSize: 14,
+          },
+        ]}
+      >
+        By signing in, you agree to our{" "}
+        <Text
+          style={{ textDecorationLine: "underline" }}
+          onPress={() => Linking.openURL("https://www.queyk.com/privacy")}
+        >
+          Privacy Policy
+        </Text>
+        .
+      </Text>
       <Dialog
         visible={dialogVisible}
         title={dialogTitle}
