@@ -540,7 +540,6 @@ export default function EvacuationPlan() {
             style={[
               styles.secondaryButton,
               {
-                opacity: isOffline ? 0.7 : 1,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
@@ -554,8 +553,6 @@ export default function EvacuationPlan() {
                 setIsCameraVisible((prev) => !prev);
               }
             }}
-            aria-disabled={isOffline}
-            disabled={isOffline}
           >
             <MaterialIcons name="qr-code-scanner" size={16} color="#212529" />
             <Text style={[styles.buttonText, { color: "#212529" }]}>
