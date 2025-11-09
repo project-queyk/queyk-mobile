@@ -31,12 +31,16 @@ function EditUserModal({
   onClose,
   onToggleEmailNotificationAlert,
   onToggleUserRole,
+  onToggleSMSNotificationAlert,
+  onTogglePushNotificationAlert,
 }: {
   visible: boolean;
   user: User | null;
   onClose: () => void;
   onToggleEmailNotificationAlert: (user: User) => void;
   onToggleUserRole: (user: User) => void;
+  onToggleSMSNotificationAlert: (user: User) => void;
+  onTogglePushNotificationAlert: (user: User) => void;
 }) {
   return (
     <Modal
@@ -68,7 +72,9 @@ function EditUserModal({
             Manage {user?.name}&apos;s account
           </Text>
           <View style={{ marginBottom: 20 }}>
-            <Text style={styles.modalLabel}>Notification Preference:</Text>
+            <Text style={styles.modalLabel}>
+              Email Notification Preference:
+            </Text>
             <TouchableOpacity
               style={styles.selectBox}
               activeOpacity={0.9}
@@ -78,11 +84,7 @@ function EditUserModal({
                 style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
               >
                 <MaterialIcons
-                  name={
-                    user?.alertNotification
-                      ? "notifications-off"
-                      : "notifications"
-                  }
+                  name={user?.alertNotification ? "mail-lock" : "mail"}
                   size={16}
                   color="#212529"
                   style={{ marginTop: 1 }}
@@ -100,6 +102,76 @@ function EditUserModal({
               />
             </TouchableOpacity>
           </View>
+          {user?.phoneNumber ? (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={styles.modalLabel}>
+                SMS Notification Preference:
+              </Text>
+              <TouchableOpacity
+                style={styles.selectBox}
+                activeOpacity={0.9}
+                onPress={() => user && onToggleSMSNotificationAlert(user)}
+              >
+                <View
+                  style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
+                >
+                  <MaterialIcons
+                    name={user?.smsNotification ? "sms-failed" : "sms"}
+                    size={16}
+                    color="#212529"
+                    style={{ marginTop: 1 }}
+                  />
+                  <Text style={styles.selectText}>
+                    {user?.smsNotification ? "Disable" : "Enable"} SMS alert
+                    notifications
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={16}
+                  color="#212529"
+                  style={{ marginTop: 1 }}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          {user?.expoPushToken ? (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={styles.modalLabel}>
+                Push Notification Preference:
+              </Text>
+              <TouchableOpacity
+                style={styles.selectBox}
+                activeOpacity={0.9}
+                onPress={() => user && onTogglePushNotificationAlert(user)}
+              >
+                <View
+                  style={{ flexDirection: "row", gap: 6, alignItems: "center" }}
+                >
+                  <MaterialIcons
+                    name={
+                      user?.pushNotification
+                        ? "notifications-off"
+                        : "notifications"
+                    }
+                    size={16}
+                    color="#212529"
+                    style={{ marginTop: 1 }}
+                  />
+                  <Text style={styles.selectText}>
+                    {user?.pushNotification ? "Disable" : "Enable"} push alert
+                    notifications
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={16}
+                  color="#212529"
+                  style={{ marginTop: 1 }}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null}
           <View style={{ marginBottom: 20 }}>
             <Text style={styles.modalLabel}>Role Preference:</Text>
             <TouchableOpacity
@@ -215,6 +287,88 @@ export default function UserManagement() {
     },
   });
 
+  const { mutate: updateSMSNotification } = useMutation({
+    mutationFn: async (newValue: {
+      userId: string;
+      smsNotification: boolean;
+    }) => {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/api/users/${newValue.userId}/sms-notifications`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            smsNotification: newValue.smsNotification,
+          }),
+          headers: {
+            Authorization: `Bearer ${process.env.EXPO_PUBLIC_ADMIN_TOKEN}`,
+            "Token-Type": "admin",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Failed to update this user's SMS notification preference"
+        );
+      }
+
+      const data = await response.json();
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      setAccountData((prev) =>
+        prev && prev.id === variables.userId
+          ? { ...prev, smsNotification: data.data.smsNotification }
+          : prev
+      );
+      queryClient.invalidateQueries({
+        queryKey: ["users", page, itemsPerPage, search],
+      });
+    },
+  });
+
+  const { mutate: updatePushNotification } = useMutation({
+    mutationFn: async (newValue: {
+      userId: string;
+      pushNotification: boolean;
+    }) => {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/v1/api/users/${newValue.userId}/push-notifications`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            pushNotification: newValue.pushNotification,
+          }),
+          headers: {
+            Authorization: `Bearer ${process.env.EXPO_PUBLIC_ADMIN_TOKEN}`,
+            "Token-Type": "admin",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Failed to update this user's push notification preference"
+        );
+      }
+
+      const data = await response.json();
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      setAccountData((prev) =>
+        prev && prev.id === variables.userId
+          ? { ...prev, pushNotification: data.data.pushNotification }
+          : prev
+      );
+      queryClient.invalidateQueries({
+        queryKey: ["users", page, itemsPerPage, search],
+      });
+    },
+  });
+
   const { mutate: updateUserRole } = useMutation({
     mutationFn: async (newValue: {
       userId: string;
@@ -256,6 +410,18 @@ export default function UserManagement() {
 
   function toggleEmailNotificationAlert(user: User) {
     setDialogType("toggleEmail");
+    setDialogUser(user);
+    setDialogVisible(true);
+  }
+
+  function toggleSMSNotificationAlert(user: User) {
+    setDialogType("toggleSMS");
+    setDialogUser(user);
+    setDialogVisible(true);
+  }
+
+  function togglePushNotificationAlert(user: User) {
+    setDialogType("togglePush");
     setDialogUser(user);
     setDialogVisible(true);
   }
@@ -331,6 +497,12 @@ export default function UserManagement() {
                     <DataTable.Title style={styles.colAlert}>
                       <Text style={styles.dataTableLabel}>Email Alert</Text>
                     </DataTable.Title>
+                    <DataTable.Title style={styles.colAlert}>
+                      <Text style={styles.dataTableLabel}>SMS Alert</Text>
+                    </DataTable.Title>
+                    <DataTable.Title style={styles.colAlert}>
+                      <Text style={styles.dataTableLabel}>Push Alert</Text>
+                    </DataTable.Title>
                     <DataTable.Title style={styles.colJoined}>
                       <Text style={styles.dataTableLabel}>Joined</Text>
                     </DataTable.Title>
@@ -399,6 +571,12 @@ export default function UserManagement() {
                     </DataTable.Title>
                     <DataTable.Title style={styles.colAlert}>
                       <Text style={styles.dataTableLabel}>Email Alert</Text>
+                    </DataTable.Title>
+                    <DataTable.Title style={styles.colAlert}>
+                      <Text style={styles.dataTableLabel}>SMS Alert</Text>
+                    </DataTable.Title>
+                    <DataTable.Title style={styles.colAlert}>
+                      <Text style={styles.dataTableLabel}>Push Alert</Text>
                     </DataTable.Title>
                     <DataTable.Title style={styles.colJoined}>
                       <Text style={styles.dataTableLabel}>Joined</Text>
@@ -478,6 +656,42 @@ export default function UserManagement() {
                             {user.alertNotification ? "Enabled" : "Disabled"}
                           </Text>
                         </DataTable.Cell>
+                        <DataTable.Cell style={styles.colAlert}>
+                          <Text
+                            style={[
+                              styles.badge,
+                              user.smsNotification
+                                ? {
+                                    backgroundColor: "#dcfce7",
+                                    color: "#016630",
+                                  }
+                                : {
+                                    backgroundColor: "#ffe2e2",
+                                    color: "#9f0712",
+                                  },
+                            ]}
+                          >
+                            {user.smsNotification ? "Enabled" : "Disabled"}
+                          </Text>
+                        </DataTable.Cell>
+                        <DataTable.Cell style={styles.colAlert}>
+                          <Text
+                            style={[
+                              styles.badge,
+                              user.pushNotification
+                                ? {
+                                    backgroundColor: "#dcfce7",
+                                    color: "#016630",
+                                  }
+                                : {
+                                    backgroundColor: "#ffe2e2",
+                                    color: "#9f0712",
+                                  },
+                            ]}
+                          >
+                            {user.pushNotification ? "Enabled" : "Disabled"}
+                          </Text>
+                        </DataTable.Cell>
                         <DataTable.Cell style={styles.colJoined}>
                           <Text style={styles.dataTableValue}>
                             {new Date(user.createdAt).toLocaleDateString()}
@@ -523,6 +737,8 @@ export default function UserManagement() {
           }}
           onToggleEmailNotificationAlert={toggleEmailNotificationAlert}
           onToggleUserRole={toggleUserRole}
+          onToggleSMSNotificationAlert={toggleSMSNotificationAlert}
+          onTogglePushNotificationAlert={togglePushNotificationAlert}
         />
         <Dialog
           visible={dialogVisible}
@@ -531,6 +747,14 @@ export default function UserManagement() {
               ? dialogUser?.alertNotification
                 ? "Disable Email Notifications?"
                 : "Enable Email Notifications?"
+              : dialogType === "toggleSMS"
+              ? dialogUser?.smsNotification
+                ? "Disable SMS Notifications?"
+                : "Enable SMS Notifications?"
+              : dialogType === "togglePush"
+              ? dialogUser?.pushNotification
+                ? "Disable Push Notifications?"
+                : "Enable Push Notifications?"
               : dialogType === "toggleRole"
               ? dialogUser?.role === "admin"
                 ? "Change this user's role to User?"
@@ -551,6 +775,14 @@ export default function UserManagement() {
                 ? dialogUser?.alertNotification
                   ? "This user will no longer receive email alerts when earthquake activity is detected."
                   : "This user will receive email alerts when earthquake activity is detected."
+                : dialogType === "toggleSMS"
+                ? dialogUser?.smsNotification
+                  ? "This user will no longer receive SMS alerts when earthquake activity is detected."
+                  : "This user will receive SMS alerts when earthquake activity is detected."
+                : dialogType === "togglePush"
+                ? dialogUser?.pushNotification
+                  ? "This user will no longer receive push alerts when earthquake activity is detected."
+                  : "This user will receive push alerts when earthquake activity is detected."
                 : dialogType === "toggleRole"
                 ? dialogUser?.role === "admin"
                   ? "This user will lose administrative privileges and revert to a standard user."
@@ -581,7 +813,25 @@ export default function UserManagement() {
                       userId: dialogUser.id,
                       alertNotification: !currentValue,
                     });
-                  } else if (dialogType === "toggleRole" && dialogUser) {
+                  }
+
+                  if (dialogType === "toggleSMS" && dialogUser) {
+                    const currentValue = dialogUser.smsNotification || false;
+                    updateSMSNotification({
+                      userId: dialogUser.id,
+                      smsNotification: !currentValue,
+                    });
+                  }
+
+                  if (dialogType === "togglePush" && dialogUser) {
+                    const currentValue = dialogUser.pushNotification || false;
+                    updatePushNotification({
+                      userId: dialogUser.id,
+                      pushNotification: !currentValue,
+                    });
+                  }
+
+                  if (dialogType === "toggleRole" && dialogUser) {
                     const isAdmin = dialogUser.role === "admin";
                     updateUserRole({
                       userId: dialogUser.id,
