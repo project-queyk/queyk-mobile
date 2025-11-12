@@ -80,25 +80,33 @@ function CameraModal({
               alignItems: "center",
             }}
           >
-            <CameraView
-              style={styles.camera}
-              facing="back"
-              barcodeScannerSettings={{
-                barcodeTypes: ["qr"],
-              }}
-              onBarcodeScanned={({ data }) => {
-                try {
-                  const floorWithUuid = floors.find(
-                    (floor) => floor.id === data
-                  );
-                  if (floorWithUuid) {
-                    onFloorSelect(floorWithUuid.value);
-                    onClose();
-                    onSetIsGif(true);
-                  }
-                } catch {}
-              }}
-            />
+            <View style={styles.cameraContainer}>
+              <CameraView
+                style={styles.camera}
+                facing="back"
+                barcodeScannerSettings={{
+                  barcodeTypes: ["qr"],
+                }}
+                onBarcodeScanned={({ data }) => {
+                  try {
+                    const floorWithUuid = floors.find(
+                      (floor) => floor.id === data
+                    );
+                    if (floorWithUuid) {
+                      onFloorSelect(floorWithUuid.value);
+                      onClose();
+                      onSetIsGif(true);
+                    }
+                  } catch {}
+                }}
+              />
+              <View style={styles.scanOverlay}>
+                <View style={[styles.corner, styles.topLeft]} />
+                <View style={[styles.corner, styles.topRight]} />
+                <View style={[styles.corner, styles.bottomLeft]} />
+                <View style={[styles.corner, styles.bottomRight]} />
+              </View>
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -606,6 +614,21 @@ export default function EvacuationPlan() {
                         ? "Location permission denied. Please enable Location for this app."
                         : "Unable to determine altitude. Please try again."}
                     </Text>
+                    <Text
+                      style={{
+                        marginTop: 8,
+                        fontSize: 10,
+                        textAlign: "center",
+                        color: "#565b60",
+                        fontFamily: Platform.select({
+                          android: "PlusJakartaSans_400Regular",
+                          ios: "PlusJakartaSans-Regular",
+                        }),
+                      }}
+                    >
+                      Tap the image to {isGif ? "hide" : "show"} evacuation
+                      arrows
+                    </Text>
                     <View style={{ flexDirection: "row", marginTop: 8 }}>
                       {altitudeError === "permissionDenied" ? (
                         <TouchableOpacity
@@ -664,6 +687,38 @@ export default function EvacuationPlan() {
                     alt={currentFloor.label}
                   />
                 )}
+                {isGif && isInsideBuilding && (
+                  <>
+                    <Text
+                      style={{
+                        marginTop: 8,
+                        fontSize: 12,
+                        textAlign: "center",
+                        color: "#e7000b",
+                        fontFamily: Platform.select({
+                          android: "PlusJakartaSans_600SemiBold",
+                          ios: "PlusJakartaSans-SemiBold",
+                        }),
+                      }}
+                    >
+                      Emergency Exit
+                    </Text>
+                    <Text
+                      style={{
+                        marginTop: 8,
+                        fontSize: 12,
+                        textAlign: "center",
+                        color: "#f2b321",
+                        fontFamily: Platform.select({
+                          android: "PlusJakartaSans_600SemiBold",
+                          ios: "PlusJakartaSans-SemiBold",
+                        }),
+                      }}
+                    >
+                      Normal Lane
+                    </Text>
+                  </>
+                )}
               </View>
             </>
           ) : (
@@ -714,6 +769,20 @@ export default function EvacuationPlan() {
                   }}
                 />
               </View>
+              <Text
+                style={{
+                  marginTop: 10,
+                  fontSize: 10,
+                  textAlign: "center",
+                  color: "#565b60",
+                  fontFamily: Platform.select({
+                    android: "PlusJakartaSans_400Regular",
+                    ios: "PlusJakartaSans-Regular",
+                  }),
+                }}
+              >
+                Tap the image to {isGif ? "hide" : "show"} evacuation arrows
+              </Text>
               <Pressable
                 style={styles.floorPlanImage}
                 onPress={() => setIsGif((prev) => !prev)}
@@ -725,6 +794,38 @@ export default function EvacuationPlan() {
                   alt={currentFloor.label}
                 />
               </Pressable>
+              {isGif && (
+                <>
+                  <Text
+                    style={{
+                      marginTop: 8,
+                      fontSize: 12,
+                      textAlign: "center",
+                      color: "#e7000b",
+                      fontFamily: Platform.select({
+                        android: "PlusJakartaSans_600SemiBold",
+                        ios: "PlusJakartaSans-SemiBold",
+                      }),
+                    }}
+                  >
+                    Emergency Exit
+                  </Text>
+                  <Text
+                    style={{
+                      marginTop: 8,
+                      fontSize: 12,
+                      textAlign: "center",
+                      color: "#f2b321",
+                      fontFamily: Platform.select({
+                        android: "PlusJakartaSans_600SemiBold",
+                        ios: "PlusJakartaSans-SemiBold",
+                      }),
+                    }}
+                  >
+                    Normal Lane
+                  </Text>
+                </>
+              )}
             </>
           )}
         </Card>
@@ -1088,5 +1189,65 @@ const styles = StyleSheet.create({
     height: "95%",
     zIndex: 1000,
     borderRadius: 16,
+  },
+  cameraContainer: {
+    position: "relative",
+    width: "100%",
+    height: "95%",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  scanBox: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -125 }, { translateY: -125 }],
+    borderWidth: 3,
+    borderColor: "white",
+    borderRadius: 12,
+  },
+  scanOverlay: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    width: 250,
+    height: 250,
+    transform: [{ translateX: "-50%" }, { translateY: "-55%" }],
+    zIndex: 1001,
+  },
+  corner: {
+    position: "absolute",
+    width: 30,
+    height: 30,
+    borderColor: "#e5e5e5",
+    borderWidth: 4,
+  },
+  topLeft: {
+    top: -2,
+    left: -2,
+    borderBottomWidth: 0,
+    borderRightWidth: 0,
+    borderTopLeftRadius: 8,
+  },
+  topRight: {
+    top: -2,
+    right: -2,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopRightRadius: 8,
+  },
+  bottomLeft: {
+    bottom: -2,
+    left: -2,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomLeftRadius: 8,
+  },
+  bottomRight: {
+    bottom: -2,
+    right: -2,
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+    borderBottomRightRadius: 8,
   },
 });
