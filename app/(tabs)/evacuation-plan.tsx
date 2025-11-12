@@ -35,10 +35,12 @@ function CameraModal({
   visible,
   onClose,
   onFloorSelect,
+  onSetIsGif,
 }: {
   visible: boolean;
   onClose: () => void;
   onFloorSelect: (floorValue: string) => void;
+  onSetIsGif: (value: React.SetStateAction<boolean>) => void;
 }) {
   return (
     <Modal
@@ -93,6 +95,7 @@ function CameraModal({
                   if (floorWithUuid) {
                     onFloorSelect(floorWithUuid.value);
                     onClose();
+                    onSetIsGif(true);
                   }
                 } catch {}
               }}
@@ -118,6 +121,7 @@ export default function EvacuationPlan() {
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [isCameraVisible, setIsCameraVisible] = useState(false);
+  const [isGif, setIsGif] = useState(false);
 
   const isCameraPermissionGranted = Boolean(cameraPermission?.granted);
 
@@ -381,6 +385,7 @@ export default function EvacuationPlan() {
       setAltitudeError(null);
       startAwaitingAltitude(4000, true);
       setIsDynamic(true);
+      setIsGif(true);
 
       if (current.status === "granted") {
         try {
@@ -456,11 +461,14 @@ export default function EvacuationPlan() {
                 setAwaitingAltitude(false);
               }
               setIsDynamic(true);
+              setIsGif(true);
             } else {
               setIsDynamic(true);
+              setIsGif(true);
             }
           } catch {
             setIsDynamic(true);
+            setIsGif(true);
           }
         }
       } catch {}
@@ -653,7 +661,7 @@ export default function EvacuationPlan() {
                   </View>
                 ) : (
                   <Image
-                    source={currentFloor.imageSrc}
+                    source={currentFloor.gifSrc}
                     style={{ width: "100%", height: "100%" }}
                     contentFit="contain"
                     alt={currentFloor.label}
@@ -727,14 +735,17 @@ export default function EvacuationPlan() {
                   }}
                 />
               </View>
-              <View style={styles.floorPlanImage}>
+              <Pressable
+                style={styles.floorPlanImage}
+                onPress={() => setIsGif((prev) => !prev)}
+              >
                 <Image
-                  source={currentFloor.imageSrc}
+                  source={isGif ? currentFloor.gifSrc : currentFloor.imageSrc}
                   style={{ width: "100%", height: "100%" }}
                   contentFit="contain"
                   alt={currentFloor.label}
                 />
-              </View>
+              </Pressable>
             </>
           )}
         </Card>
@@ -782,6 +793,7 @@ export default function EvacuationPlan() {
           setSelectedFloor(floorValue);
           setIsDynamic(false);
         }}
+        onSetIsGif={setIsGif}
       />
       <Dialog
         visible={dialogVisible}
@@ -850,6 +862,7 @@ export default function EvacuationPlan() {
                     setAltitudeError(null);
                     startAwaitingAltitude(4000, true);
                     setIsDynamic(true);
+                    setIsGif(true);
                     const result = await ensureWatcherStarted?.({
                       promptIfNeeded: true,
                       attempts: isOffline ? 4 : 2,
@@ -896,6 +909,7 @@ export default function EvacuationPlan() {
                     clearAwaitingTimeout();
                     if (permRetry?.success) {
                       setIsDynamic(true);
+                      setIsGif(true);
                       try {
                         await SecureStore.setItemAsync(
                           "DYNAMIC_FLOOR_PLAN_ENABLED",
