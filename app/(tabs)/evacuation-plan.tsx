@@ -25,7 +25,7 @@ import { Dialog } from "react-native-simple-dialogs";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import useRealTimeAltitude from "@/hooks/use-realtime-altitude";
 import type { Floor } from "@/utils/floors";
-import { floors } from "@/utils/floors";
+import { floors, getFloorImage } from "@/utils/floors";
 import { safetyGuidelines } from "@/utils/safety-guidelines";
 
 import Card from "@/components/Card";
@@ -681,7 +681,7 @@ export default function EvacuationPlan() {
                   </View>
                 ) : (
                   <Image
-                    source={currentFloor.gifSrc}
+                    source={getFloorImage(currentFloor.value, true)}
                     style={{ width: "100%", height: "100%" }}
                     contentFit="contain"
                     alt={currentFloor.label}
@@ -788,7 +788,7 @@ export default function EvacuationPlan() {
                 onPress={() => setIsGif((prev) => !prev)}
               >
                 <Image
-                  source={isGif ? currentFloor.gifSrc : currentFloor.imageSrc}
+                  source={getFloorImage(currentFloor.value, isGif)}
                   style={{ width: "100%", height: "100%" }}
                   contentFit="contain"
                   alt={currentFloor.label}
