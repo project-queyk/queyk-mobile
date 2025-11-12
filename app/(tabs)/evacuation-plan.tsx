@@ -22,7 +22,6 @@ import { Dropdown } from "react-native-element-dropdown";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Dialog } from "react-native-simple-dialogs";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import useRealTimeAltitude from "@/hooks/use-realtime-altitude";
 import type { Floor } from "@/utils/floors";
@@ -109,7 +108,6 @@ function CameraModal({
 
 export default function EvacuationPlan() {
   const { isOffline } = useNetworkStatus();
-  const { userData } = useAuth();
   const [selectedFloor, setSelectedFloor] = useState<string>(
     floors[0]?.value ?? ""
   );
@@ -639,8 +637,7 @@ export default function EvacuationPlan() {
                       </TouchableOpacity>
                     </View>
                   </View>
-                ) : isInsideBuilding === false && userData?.role !== "admin" ? (
-                  // ) : isInsideBuilding === false ? (
+                ) : isInsideBuilding === false ? (
                   <View style={styles.errorContainer}>
                     <Text style={styles.errorText}>
                       You appear to be outside the building area. Please move
@@ -668,24 +665,6 @@ export default function EvacuationPlan() {
                   />
                 )}
               </View>
-              {isDynamic && userData?.role === "admin" && (
-                <View style={{ marginTop: 8 }}>
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      color: "#565b60",
-                      fontFamily: Platform.select({
-                        android: "PlusJakartaSans_400Regular",
-                        ios: "PlusJakartaSans-Regular",
-                      }),
-                    }}
-                  >
-                    Debug: Lat: {latitude?.toFixed(6)}, Lon:{" "}
-                    {longitude?.toFixed(6)}, Alt: {altitude?.toFixed(2)},
-                    Inside: {isInsideBuilding ? "Yes" : "No"}
-                  </Text>
-                </View>
-              )}
             </>
           ) : (
             <>
