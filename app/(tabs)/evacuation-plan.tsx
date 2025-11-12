@@ -327,26 +327,23 @@ export default function EvacuationPlan() {
 
     let selectedFloorValue = floorsWithAlt[0].value;
 
-    for (let i = 0; i < floorsWithAlt.length; i++) {
-      const currentFloor = floorsWithAlt[i];
-      const nextFloor = floorsWithAlt[i + 1];
-
-      if (i === 0 && altitude <= currentFloor.altitude + 1.5) {
-        selectedFloorValue = currentFloor.value;
-        break;
-      } else if (!nextFloor) {
-        selectedFloorValue = currentFloor.value;
-        break;
-      } else {
+    if (altitude <= floorsWithAlt[0].altitude + 1.5) {
+      selectedFloorValue = floorsWithAlt[0].value;
+    } else if (
+      altitude >=
+      floorsWithAlt[floorsWithAlt.length - 1].altitude - 1.0
+    ) {
+      selectedFloorValue = floorsWithAlt[floorsWithAlt.length - 1].value;
+    } else {
+      for (let i = 0; i < floorsWithAlt.length - 1; i++) {
+        const currentFloor = floorsWithAlt[i];
+        const nextFloor = floorsWithAlt[i + 1];
         const midpoint = (currentFloor.altitude + nextFloor.altitude) / 2;
 
         if (altitude > currentFloor.altitude - 1.0 && altitude <= midpoint) {
           selectedFloorValue = currentFloor.value;
           break;
-        } else if (
-          altitude > midpoint &&
-          altitude <= nextFloor.altitude + 1.5
-        ) {
+        } else if (altitude > midpoint && altitude < nextFloor.altitude - 1.0) {
           selectedFloorValue = nextFloor.value;
           break;
         }
