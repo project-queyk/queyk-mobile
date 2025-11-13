@@ -3,9 +3,9 @@
 An earthquake monitoring and emergency response system designed for educational institutions. Queyk provides seismic activity monitoring, safety protocols, and evacuation planning to help schools prepare for and respond to earthquakes.
 
 <div style="display: flex; gap: 10px;">
-    <img src="https://queyk.vercel.app/mobile-1.jpg" alt="queyk mobile 1" style="width: 33%; height: auto;">
-    <img src="https://queyk.vercel.app/mobile-2.jpg" alt="queyk mobile 2" style="width: 33%; height: auto;">
-    <img src="https://queyk.vercel.app/mobile-3.jpg" alt="queyk mobile 3" style="width: 33%; height: auto;">
+    <img src="https://queyk.vercel.app/mobile-1.jpg" alt="queyk mobile 1" style="width: 25%; height: auto;">
+    <img src="https://queyk.vercel.app/mobile-2.jpg" alt="queyk mobile 2" style="width: 25%; height: auto;">
+    <img src="https://queyk.vercel.app/mobile-3.jpg" alt="queyk mobile 3" style="width: 25%; height: auto;">
 </div>
 
 ## Features
