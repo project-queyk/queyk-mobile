@@ -1,3 +1,4 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system/legacy";
@@ -293,6 +294,26 @@ export default function EvacuationPlan() {
       buildingBounds.minLat,
       buildingBounds.minLon,
     ]
+  );
+
+  const calculateUserPosition = useCallback(
+    (userLat: number, userLon: number) => {
+      const latPercent =
+        (userLat - buildingBounds.minLat) /
+        (buildingBounds.maxLat - buildingBounds.minLat);
+      const lonPercent =
+        (userLon - buildingBounds.minLon) /
+        (buildingBounds.maxLon - buildingBounds.minLon);
+
+      const x = lonPercent * 100;
+      const y = (1 - latPercent) * 100;
+
+      return {
+        x: Math.max(0, Math.min(100, x)),
+        y: Math.max(0, Math.min(100, y)),
+      };
+    },
+    [buildingBounds]
   );
 
   useEffect(() => {
@@ -677,12 +698,49 @@ export default function EvacuationPlan() {
                     </View>
                   </View>
                 ) : (
-                  <Image
-                    source={getFloorImage(currentFloor.value, true)}
-                    style={{ width: "100%", height: "100%" }}
-                    contentFit="contain"
-                    alt={currentFloor.label}
-                  />
+                  <View
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  >
+                    <Image
+                      source={getFloorImage(currentFloor.value, true)}
+                      style={{ width: "100%", height: "100%" }}
+                      contentFit="contain"
+                      alt={currentFloor.label}
+                    />
+                    {latitude !== null &&
+                      longitude !== null &&
+                      isInsideBuilding && (
+                        <View
+                          style={[
+                            styles.userLocationPin,
+                            {
+                              left: `${
+                                calculateUserPosition(latitude, longitude).x
+                              }%`,
+                              top: `${
+                                calculateUserPosition(latitude, longitude).y
+                              }%`,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="location"
+                            size={24}
+                            color="#FF0000"
+                            style={{
+                              shadowColor: "#000",
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.3,
+                              shadowRadius: 3,
+                            }}
+                          />
+                        </View>
+                      )}
+                  </View>
                 )}
                 {isGif && isInsideBuilding && (
                   <>
@@ -1246,5 +1304,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     borderLeftWidth: 0,
     borderBottomRightRadius: 8,
+  },
+  userLocationPin: {
+    position: "absolute",
+    transform: [{ translateX: -12 }, { translateY: -24 }],
+    zIndex: 1000,
+    elevation: 5,
   },
 });
