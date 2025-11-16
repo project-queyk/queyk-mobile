@@ -239,12 +239,12 @@ export default function EvacuationPlan() {
   function handleRetry() {
     (async () => {
       setAltitudeError(null);
-      startAwaitingAltitude(4000, false);
+      startAwaitingAltitude(2000, false);
       try {
         const res = await ensureWatcherStarted?.({
           promptIfNeeded: false,
-          attempts: isOffline ? 4 : 2,
-          waitForAltitudeMs: isOffline ? 14000 : 4000,
+          attempts: isOffline ? 3 : 1,
+          waitForAltitudeMs: isOffline ? 8000 : 2000,
         });
         clearAwaitingTimeout();
         if (!res?.success) {
@@ -407,7 +407,7 @@ export default function EvacuationPlan() {
       const current = await Location.getForegroundPermissionsAsync();
 
       setAltitudeError(null);
-      startAwaitingAltitude(4000, true);
+      startAwaitingAltitude(2000, true);
       setIsDynamic(true);
       setIsGif(true);
 
@@ -415,8 +415,8 @@ export default function EvacuationPlan() {
         try {
           const result = await ensureWatcherStarted?.({
             promptIfNeeded: false,
-            attempts: isOffline ? 4 : 2,
-            waitForAltitudeMs: isOffline ? 14000 : 4000,
+            attempts: isOffline ? 3 : 1,
+            waitForAltitudeMs: isOffline ? 8000 : 2000,
           });
           clearAwaitingTimeout();
           if (result?.success) {
@@ -464,12 +464,12 @@ export default function EvacuationPlan() {
             if (current.status === "granted") {
               setAltitudeError(null);
 
-              startAwaitingAltitude(8000, false);
+              startAwaitingAltitude(6000, false);
               try {
                 const res = await ensureWatcherStarted?.({
                   promptIfNeeded: false,
-                  attempts: isOffline ? 4 : 2,
-                  waitForAltitudeMs: isOffline ? 14000 : 4000,
+                  attempts: isOffline ? 3 : 1,
+                  waitForAltitudeMs: isOffline ? 10000 : 3000,
                 });
                 clearAwaitingTimeout();
                 if (!res?.success) {
@@ -623,8 +623,38 @@ export default function EvacuationPlan() {
           {isDynamic ? (
             <>
               <View style={styles.floorPlanImage}>
-                {awaitingAltitude && altitude == null && !altitudeError ? (
-                  <View style={styles.imageSkeleton} />
+                {(awaitingAltitude && altitude == null && !altitudeError) ||
+                (isDynamic &&
+                  latitude === null &&
+                  longitude === null &&
+                  !altitudeError) ? (
+                  <View style={styles.imageSkeleton}>
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: [{ translateX: -50 }, { translateY: -50 }],
+                        alignItems: "center",
+                      }}
+                    >
+                      <ActivityIndicator size="large" color="#193867" />
+                      <Text
+                        style={{
+                          marginTop: 8,
+                          fontSize: 12,
+                          color: "#565b60",
+                          textAlign: "center",
+                          fontFamily: Platform.select({
+                            android: "PlusJakartaSans_500Medium",
+                            ios: "PlusJakartaSans-Medium",
+                          }),
+                        }}
+                      >
+                        Getting your location...
+                      </Text>
+                    </View>
+                  </View>
                 ) : altitudeError ? (
                   <View style={styles.errorContainer}>
                     <Text style={styles.errorText}>
@@ -995,13 +1025,13 @@ export default function EvacuationPlan() {
                 } else if (dialogType === "enableLocation") {
                   try {
                     setAltitudeError(null);
-                    startAwaitingAltitude(4000, true);
+                    startAwaitingAltitude(2000, true);
                     setIsDynamic(true);
                     setIsGif(true);
                     const result = await ensureWatcherStarted?.({
                       promptIfNeeded: true,
-                      attempts: isOffline ? 4 : 2,
-                      waitForAltitudeMs: isOffline ? 14000 : 4000,
+                      attempts: isOffline ? 3 : 1,
+                      waitForAltitudeMs: isOffline ? 8000 : 2000,
                     });
                     clearAwaitingTimeout();
                     if (result?.success) {
@@ -1035,11 +1065,11 @@ export default function EvacuationPlan() {
                   setDialogVisible(false);
                 } else if (dialogType === "permissionDenied") {
                   try {
-                    startAwaitingAltitude(4000, false);
+                    startAwaitingAltitude(2000, false);
                     const permRetry = await ensureWatcherStarted?.({
                       promptIfNeeded: true,
-                      attempts: isOffline ? 4 : 2,
-                      waitForAltitudeMs: isOffline ? 14000 : 4000,
+                      attempts: isOffline ? 3 : 1,
+                      waitForAltitudeMs: isOffline ? 8000 : 2000,
                     });
                     clearAwaitingTimeout();
                     if (permRetry?.success) {
