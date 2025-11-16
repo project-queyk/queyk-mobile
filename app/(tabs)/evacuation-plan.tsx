@@ -742,39 +742,39 @@ export default function EvacuationPlan() {
                       )}
                   </View>
                 )}
-                {isGif && isInsideBuilding && (
-                  <>
-                    <Text
-                      style={{
-                        marginTop: 8,
-                        fontSize: 12,
-                        textAlign: "center",
-                        color: "#e7000b",
-                        fontFamily: Platform.select({
-                          android: "PlusJakartaSans_600SemiBold",
-                          ios: "PlusJakartaSans-SemiBold",
-                        }),
-                      }}
-                    >
-                      Emergency Exit
-                    </Text>
-                    <Text
-                      style={{
-                        marginTop: 8,
-                        fontSize: 12,
-                        textAlign: "center",
-                        color: "#f2b321",
-                        fontFamily: Platform.select({
-                          android: "PlusJakartaSans_600SemiBold",
-                          ios: "PlusJakartaSans-SemiBold",
-                        }),
-                      }}
-                    >
-                      Normal Lane
-                    </Text>
-                  </>
-                )}
               </View>
+              {isGif && isInsideBuilding && (
+                <>
+                  <Text
+                    style={{
+                      marginTop: 8,
+                      fontSize: 12,
+                      textAlign: "center",
+                      color: "#e7000b",
+                      fontFamily: Platform.select({
+                        android: "PlusJakartaSans_600SemiBold",
+                        ios: "PlusJakartaSans-SemiBold",
+                      }),
+                    }}
+                  >
+                    Emergency Exit
+                  </Text>
+                  <Text
+                    style={{
+                      marginTop: 8,
+                      fontSize: 12,
+                      textAlign: "center",
+                      color: "#f2b321",
+                      fontFamily: Platform.select({
+                        android: "PlusJakartaSans_600SemiBold",
+                        ios: "PlusJakartaSans-SemiBold",
+                      }),
+                    }}
+                  >
+                    Normal Lane
+                  </Text>
+                </>
+              )}
             </>
           ) : (
             <>
