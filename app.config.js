@@ -91,7 +91,7 @@ module.exports = {
         "expo-location",
         {
           locationAlwaysAndWhenInUsePermission:
-            "Allow Queyk to use your location.",
+            "Allow Queyk to use your location for emergency evacuation assistance.",
         },
       ],
       "expo-web-browser",
