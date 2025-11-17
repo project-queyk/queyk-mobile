@@ -305,8 +305,8 @@ export default function EvacuationPlan() {
         (userLon - buildingBounds.minLon) /
         (buildingBounds.maxLon - buildingBounds.minLon);
 
-      const x = lonPercent * 100;
-      const y = (1 - latPercent) * 100;
+      const x = (1 - lonPercent) * 100;
+      const y = latPercent * 100;
 
       return {
         x: Math.max(0, Math.min(100, x)),
