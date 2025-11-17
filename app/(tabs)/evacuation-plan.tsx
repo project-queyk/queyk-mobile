@@ -628,33 +628,7 @@ export default function EvacuationPlan() {
                   latitude === null &&
                   longitude === null &&
                   !altitudeError) ? (
-                  <View style={styles.imageSkeleton}>
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: [{ translateX: -50 }, { translateY: -50 }],
-                        alignItems: "center",
-                      }}
-                    >
-                      <ActivityIndicator size="large" color="#193867" />
-                      <Text
-                        style={{
-                          marginTop: 8,
-                          fontSize: 12,
-                          color: "#565b60",
-                          textAlign: "center",
-                          fontFamily: Platform.select({
-                            android: "PlusJakartaSans_500Medium",
-                            ios: "PlusJakartaSans-Medium",
-                          }),
-                        }}
-                      >
-                        Getting your location...
-                      </Text>
-                    </View>
-                  </View>
+                  <View style={styles.imageSkeleton} />
                 ) : altitudeError ? (
                   <View style={styles.errorContainer}>
                     <Text style={styles.errorText}>
