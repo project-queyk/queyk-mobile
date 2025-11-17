@@ -243,8 +243,8 @@ export default function EvacuationPlan() {
       try {
         const res = await ensureWatcherStarted?.({
           promptIfNeeded: false,
-          attempts: isOffline ? 3 : 1,
-          waitForAltitudeMs: isOffline ? 8000 : 2000,
+          attempts: isOffline ? 3 : 2,
+          waitForAltitudeMs: isOffline ? 6000 : 4000,
         });
         clearAwaitingTimeout();
         if (!res?.success) {
@@ -396,7 +396,7 @@ export default function EvacuationPlan() {
       const current = await Location.getForegroundPermissionsAsync();
 
       setAltitudeError(null);
-      startAwaitingAltitude(2000, true);
+      startAwaitingAltitude(4000, true);
       setIsDynamic(true);
       setIsGif(true);
 
@@ -404,8 +404,8 @@ export default function EvacuationPlan() {
         try {
           const result = await ensureWatcherStarted?.({
             promptIfNeeded: false,
-            attempts: isOffline ? 3 : 1,
-            waitForAltitudeMs: isOffline ? 8000 : 2000,
+            attempts: isOffline ? 3 : 2,
+            waitForAltitudeMs: isOffline ? 6000 : 4000,
           });
           clearAwaitingTimeout();
           if (result?.success) {
@@ -457,8 +457,8 @@ export default function EvacuationPlan() {
               try {
                 const res = await ensureWatcherStarted?.({
                   promptIfNeeded: false,
-                  attempts: isOffline ? 3 : 1,
-                  waitForAltitudeMs: isOffline ? 10000 : 3000,
+                  attempts: isOffline ? 3 : 2,
+                  waitForAltitudeMs: isOffline ? 8000 : 5000,
                 });
                 clearAwaitingTimeout();
                 if (!res?.success) {
@@ -988,13 +988,13 @@ export default function EvacuationPlan() {
                 } else if (dialogType === "enableLocation") {
                   try {
                     setAltitudeError(null);
-                    startAwaitingAltitude(2000, true);
+                    startAwaitingAltitude(4000, true);
                     setIsDynamic(true);
                     setIsGif(true);
                     const result = await ensureWatcherStarted?.({
                       promptIfNeeded: true,
-                      attempts: isOffline ? 3 : 1,
-                      waitForAltitudeMs: isOffline ? 8000 : 2000,
+                      attempts: isOffline ? 3 : 2,
+                      waitForAltitudeMs: isOffline ? 6000 : 4000,
                     });
                     clearAwaitingTimeout();
                     if (result?.success) {
@@ -1031,8 +1031,8 @@ export default function EvacuationPlan() {
                     startAwaitingAltitude(2000, false);
                     const permRetry = await ensureWatcherStarted?.({
                       promptIfNeeded: true,
-                      attempts: isOffline ? 3 : 1,
-                      waitForAltitudeMs: isOffline ? 8000 : 2000,
+                      attempts: isOffline ? 3 : 2,
+                      waitForAltitudeMs: isOffline ? 6000 : 4000,
                     });
                     clearAwaitingTimeout();
                     if (permRetry?.success) {
