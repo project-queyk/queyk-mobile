@@ -3,10 +3,10 @@ import { LocationCoordinates, SchoolBoundary } from "./types/location";
 export const SCHOOL_BOUNDARY: SchoolBoundary = {
   name: "School Building",
   corners: [
-    { latitude: 40.7128, longitude: -74.006 },
-    { latitude: 40.7128, longitude: -74.0059 },
-    { latitude: 40.7127, longitude: -74.0059 },
-    { latitude: 40.7127, longitude: -74.006 },
+    { latitude: 14.768133, longitude: 121.07969 },
+    { latitude: 14.768133, longitude: 121.079834 },
+    { latitude: 14.767674, longitude: 121.079834 },
+    { latitude: 14.767674, longitude: 121.07969 },
   ],
 };
 
