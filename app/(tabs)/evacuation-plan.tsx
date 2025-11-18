@@ -281,7 +281,7 @@ export default function EvacuationPlan() {
 
   const isPointInBuilding = useCallback(
     (point: { lat: number; lon: number }) => {
-      const tolerance = 0.00005;
+      const tolerance = 0.0001;
       return (
         point.lat >= buildingBounds.minLat - tolerance &&
         point.lat <= buildingBounds.maxLat + tolerance &&
@@ -357,7 +357,7 @@ export default function EvacuationPlan() {
       selectedFloorValue = floorsWithAlt[0].value;
     } else if (
       altitude >=
-      floorsWithAlt[floorsWithAlt.length - 1].altitude - 1.0
+      floorsWithAlt[floorsWithAlt.length - 1].altitude - 0.5
     ) {
       selectedFloorValue = floorsWithAlt[floorsWithAlt.length - 1].value;
     } else {
@@ -366,10 +366,10 @@ export default function EvacuationPlan() {
         const nextFloor = floorsWithAlt[i + 1];
         const midpoint = (currentFloor.altitude + nextFloor.altitude) / 2;
 
-        if (altitude > currentFloor.altitude - 1.0 && altitude <= midpoint) {
+        if (altitude > currentFloor.altitude - 0.5 && altitude <= midpoint) {
           selectedFloorValue = currentFloor.value;
           break;
-        } else if (altitude > midpoint && altitude < nextFloor.altitude - 1.0) {
+        } else if (altitude > midpoint && altitude < nextFloor.altitude + 0.5) {
           selectedFloorValue = nextFloor.value;
           break;
         }
