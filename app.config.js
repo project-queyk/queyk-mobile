@@ -16,6 +16,16 @@ module.exports = {
         light: "./assets/images/icons/ios-light.png",
         tinted: "./assets/images/icons/ios-tinted.png",
       },
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription:
+          "Allow Queyk to use your location for emergency evacuation assistance.",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "Allow Queyk to use your location for safety tracking even when the app is closed.",
+        NSLocationAlwaysUsageDescription:
+          "Allow Queyk to use your location for safety tracking.",
+        NSMotionUsageDescription:
+          "Allow Queyk to use motion data for safety tracking.",
+      },
     },
     android: {
       adaptiveIcon: {
@@ -40,6 +50,13 @@ module.exports = {
           ],
           category: ["BROWSABLE", "DEFAULT"],
         },
+      ],
+      permissions: [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
       ],
     },
     web: {
@@ -87,11 +104,14 @@ module.exports = {
       ],
       "expo-secure-store",
       "expo-font",
+      "expo-task-manager",
       [
         "expo-location",
         {
           locationAlwaysAndWhenInUsePermission:
-            "Allow Queyk to use your location for emergency evacuation assistance.",
+            "Allow Queyk to use your location for emergency evacuation assistance and safety tracking.",
+          locationAlwaysPermission:
+            "Allow Queyk to use your location for safety tracking even when the app is closed.",
         },
       ],
       "expo-web-browser",
