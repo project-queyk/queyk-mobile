@@ -281,11 +281,12 @@ export default function EvacuationPlan() {
 
   const isPointInBuilding = useCallback(
     (point: { lat: number; lon: number }) => {
+      const tolerance = 0.00005;
       return (
-        point.lat >= buildingBounds.minLat &&
-        point.lat <= buildingBounds.maxLat &&
-        point.lon >= buildingBounds.minLon &&
-        point.lon <= buildingBounds.maxLon
+        point.lat >= buildingBounds.minLat - tolerance &&
+        point.lat <= buildingBounds.maxLat + tolerance &&
+        point.lon >= buildingBounds.minLon - tolerance &&
+        point.lon <= buildingBounds.maxLon + tolerance
       );
     },
     [
