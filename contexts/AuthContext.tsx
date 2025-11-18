@@ -76,14 +76,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const latestUserData = await fetchLatestUserData(userData);
 
-      if (!latestUserData) {
+      if (latestUserData === null) {
         try {
           await signOut();
         } catch {}
         return;
       }
 
-      if (JSON.stringify(latestUserData) !== JSON.stringify(userData)) {
+      if (
+        latestUserData &&
+        JSON.stringify(latestUserData) !== JSON.stringify(userData)
+      ) {
         setUserData(latestUserData);
         await SecureStore.setItemAsync(
           USERDATA_KEY,
@@ -181,9 +184,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           method.toUpperCase() === "GET" &&
           url.includes(`/v1/api/users/${userData.id}`)
         ) {
-          if (response.status === 404 || response.status === 204) {
+          if (response.status === 404 || response.status === 410) {
             await signOut();
-          } else if (response.ok) {
+          } else if (response.ok && response.status !== 204) {
             const contentType = response.headers.get("content-type") || "";
             if (contentType.includes("application/json")) {
               const json = await response
@@ -192,7 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 .catch(() => null);
               const body = json?.data ?? json;
               if (body == null) {
-                await signOut();
+                return response;
               }
             }
           }

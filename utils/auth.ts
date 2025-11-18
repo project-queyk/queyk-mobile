@@ -26,14 +26,16 @@ export async function fetchLatestUserData(
     );
 
     if (!response.ok) {
-      if (
-        response.status === 404 ||
-        response.status === 410 ||
-        response.status === 401 ||
-        response.status === 403 ||
-        response.status === 204
-      ) {
+      if (response.status === 404 || response.status === 410) {
         return null;
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        return userData;
+      }
+
+      if (response.status === 204) {
+        return userData;
       }
 
       try {
@@ -55,13 +57,16 @@ export async function fetchLatestUserData(
       return userData;
     }
 
-    if (response.status === 204) return null;
-
     const data = await response.json();
 
-    if (data == null) return null;
+    if (data == null) {
+      return userData;
+    }
+
     if (Object.prototype.hasOwnProperty.call(data, "data")) {
-      if (data.data == null) return null;
+      if (data.data == null) {
+        return userData;
+      }
       return data.data;
     }
 
