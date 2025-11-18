@@ -305,15 +305,19 @@ export default function EvacuationPlan() {
         (userLon - buildingBounds.minLon) /
         (buildingBounds.maxLon - buildingBounds.minLon);
 
-      const x = (1 - lonPercent) * 100;
+      let x = (1 - lonPercent) * 100;
       const y = latPercent * 100;
+
+      if (currentFloor.id === "first" || currentFloor.id === "third") {
+        x = lonPercent * 100;
+      }
 
       return {
         x: Math.max(0, Math.min(100, x)),
         y: Math.max(0, Math.min(100, y)),
       };
     },
-    [buildingBounds]
+    [buildingBounds, currentFloor.id]
   );
 
   useEffect(() => {
@@ -940,12 +944,12 @@ export default function EvacuationPlan() {
           dialogType === "locationServicesDisabled"
             ? "Location services disabled"
             : dialogType === "enableLocation"
-            ? "Enable Location"
-            : dialogType === "locationPermissionNeeded"
-            ? "Location permission needed"
-            : dialogType === "permissionDenied"
-            ? "Permission denied"
-            : ""
+              ? "Enable Location"
+              : dialogType === "locationPermissionNeeded"
+                ? "Location permission needed"
+                : dialogType === "permissionDenied"
+                  ? "Permission denied"
+                  : ""
         }
         titleStyle={[styles.headerText, { textAlign: "center" }]}
         dialogStyle={styles.dialog}
@@ -960,12 +964,12 @@ export default function EvacuationPlan() {
             {dialogType === "locationServicesDisabled"
               ? "Your device's location services are turned off. Please enable them to use the dynamic floor plan."
               : dialogType === "enableLocation"
-              ? "Allow this app to access your device location so we can show a dynamic floor plan based on your altitude."
-              : dialogType === "locationPermissionNeeded"
-              ? "To show a live dynamic floor plan the app needs Location access. Please enable it in your device settings."
-              : dialogType === "permissionDenied"
-              ? "Location permission was denied. You can retry to grant it."
-              : ""}
+                ? "Allow this app to access your device location so we can show a dynamic floor plan based on your altitude."
+                : dialogType === "locationPermissionNeeded"
+                  ? "To show a live dynamic floor plan the app needs Location access. Please enable it in your device settings."
+                  : dialogType === "permissionDenied"
+                    ? "Location permission was denied. You can retry to grant it."
+                    : ""}
           </Text>
           <View
             style={{
@@ -985,8 +989,8 @@ export default function EvacuationPlan() {
                     dialogType === "locationPermissionNeeded"
                       ? "#193867"
                       : dialogType === "permissionDenied"
-                      ? "#193867"
-                      : "#193867",
+                        ? "#193867"
+                        : "#193867",
                   marginBottom: 0,
                 },
               ]}
@@ -1074,10 +1078,10 @@ export default function EvacuationPlan() {
                 dialogType === "locationPermissionNeeded"
                   ? "Open Settings"
                   : dialogType === "enableLocation"
-                  ? "Continue"
-                  : dialogType === "permissionDenied"
-                  ? "Retry"
-                  : "Continue"}
+                    ? "Continue"
+                    : dialogType === "permissionDenied"
+                      ? "Retry"
+                      : "Continue"}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
