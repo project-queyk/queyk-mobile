@@ -18,6 +18,11 @@ import {
 } from "@/config/auth.config";
 
 import { fetchLatestUserData, signInToBackend } from "@/utils/auth";
+import {
+  setLocationUpdateThrottle,
+  startBackgroundLocationTracking,
+  stopBackgroundLocationTracking,
+} from "@/utils/backgroundLocationTask";
 import { isConnected, subscribeToNetworkChanges } from "@/utils/network";
 import {
   requestPushNotificationPermissions,
@@ -44,6 +49,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await SecureStore.deleteItemAsync(USER_KEY);
       await SecureStore.deleteItemAsync(USERDATA_KEY);
+    } catch {}
+
+    try {
+      await stopBackgroundLocationTracking();
     } catch {}
 
     setUser(null);
@@ -142,6 +151,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch {}
     };
   }, [userData, isOnline, isLoading, refreshUserDataSilently]);
+
+  useEffect(() => {
+    if (!userData) {
+      stopBackgroundLocationTracking().catch(() => {});
+      return;
+    }
+
+    setLocationUpdateThrottle(__DEV__ ? 0 : 0);
+
+    startBackgroundLocationTracking({
+      timeInterval: __DEV__ ? 5000 : 10000,
+      distanceInterval: 10,
+    }).catch((error) => {});
+  }, [userData]);
 
   useEffect(() => {
     const originalFetch = (global as any).fetch;

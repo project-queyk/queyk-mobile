@@ -1,7 +1,3 @@
-/**
- * Types for background location tracking and geofencing
- */
-
 export interface LocationCoordinates {
   latitude: number;
   longitude: number;
