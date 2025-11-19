@@ -302,7 +302,7 @@ export default function EvacuationPlan() {
   );
 
   const calculateUserPosition = useCallback(
-    (userLat: number, userLon: number) => {
+    (userLat: number, userLon: number, floorId: string) => {
       const latPercent =
         (userLat - buildingBounds.minLat) /
         (buildingBounds.maxLat - buildingBounds.minLat);
@@ -313,7 +313,7 @@ export default function EvacuationPlan() {
       let x = (1 - lonPercent) * 100;
       const y = latPercent * 100;
 
-      if (currentFloor.id === "first" || currentFloor.id === "third") {
+      if (floorId === "third") {
         x = lonPercent * 100;
       }
 
@@ -322,7 +322,7 @@ export default function EvacuationPlan() {
         y: Math.max(0, Math.min(100, y)),
       };
     },
-    [buildingBounds, currentFloor.id]
+    [buildingBounds]
   );
 
   useEffect(() => {
