@@ -172,13 +172,8 @@ export default function EvacuationPlan() {
   const [isInsideBuilding, setIsInsideBuilding] = useState<boolean | null>(
     null
   );
-  const [userPosition, setUserPosition] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
   const altitudeTimeoutRef = useRef<number | null>(null);
   const altitudeStateRef = useRef<number | null>(altitude);
-  const previousPositionRef = useRef<{ x: number; y: number } | null>(null);
   const startAttemptRef = useRef(0);
 
   const clearAwaitingTimeout = useCallback(() => {
@@ -303,7 +298,7 @@ export default function EvacuationPlan() {
   );
 
   const calculateUserPosition = useCallback(
-    (userLat: number, userLon: number, floorId: string) => {
+    (userLat: number, userLon: number) => {
       const latPercent =
         (userLat - buildingBounds.minLat) /
         (buildingBounds.maxLat - buildingBounds.minLat);
@@ -314,7 +309,7 @@ export default function EvacuationPlan() {
       let x = (1 - lonPercent) * 100;
       const y = latPercent * 100;
 
-      if (floorId === "third") {
+      if (currentFloor.id === "first" || currentFloor.id === "third") {
         x = lonPercent * 100;
       }
 
@@ -323,7 +318,7 @@ export default function EvacuationPlan() {
         y: Math.max(0, Math.min(100, y)),
       };
     },
-    [buildingBounds]
+    [buildingBounds, currentFloor.id]
   );
 
   useEffect(() => {
@@ -385,49 +380,6 @@ export default function EvacuationPlan() {
       setSelectedFloor(selectedFloorValue);
     }
   }, [isDynamic, altitude, isInsideBuilding, selectedFloor]);
-
-  useEffect(() => {
-    if (!isDynamic) {
-      setUserPosition(null);
-      previousPositionRef.current = null;
-      return;
-    }
-    if (latitude == null || longitude == null || !isInsideBuilding) {
-      setUserPosition(null);
-      previousPositionRef.current = null;
-      return;
-    }
-    try {
-      const position = calculateUserPosition(
-        latitude,
-        longitude,
-        currentFloor.id
-      );
-
-      const POSITION_THRESHOLD = 1;
-      if (previousPositionRef.current) {
-        const deltaX = Math.abs(position.x - previousPositionRef.current.x);
-        const deltaY = Math.abs(position.y - previousPositionRef.current.y);
-
-        if (deltaX < POSITION_THRESHOLD && deltaY < POSITION_THRESHOLD) {
-          return;
-        }
-      }
-
-      previousPositionRef.current = position;
-      setUserPosition(position);
-    } catch {
-      setUserPosition(null);
-      previousPositionRef.current = null;
-    }
-  }, [
-    isDynamic,
-    latitude,
-    longitude,
-    isInsideBuilding,
-    calculateUserPosition,
-    currentFloor.id,
-  ]);
 
   async function toggleDynamicFloorPlan() {
     const enabling = !isDynamic;
@@ -770,14 +722,17 @@ export default function EvacuationPlan() {
                     />
                     {latitude !== null &&
                       longitude !== null &&
-                      isInsideBuilding &&
-                      userPosition && (
+                      isInsideBuilding && (
                         <View
                           style={[
                             styles.userLocationPin,
                             {
-                              left: `${userPosition.x}%`,
-                              top: `${userPosition.y}%`,
+                              left: `${
+                                calculateUserPosition(latitude, longitude).x
+                              }%`,
+                              top: `${
+                                calculateUserPosition(latitude, longitude).y
+                              }%`,
                             },
                           ]}
                         >
