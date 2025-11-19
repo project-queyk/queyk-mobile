@@ -811,6 +811,29 @@ export default function EvacuationPlan() {
                   >
                     Normal Lane
                   </Text>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginTop: 8,
+                      gap: 6,
+                    }}
+                  >
+                    <Ionicons name="location" size={16} color="#FF0000" />
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: "#FF0000",
+                        fontFamily: Platform.select({
+                          android: "PlusJakartaSans_600SemiBold",
+                          ios: "PlusJakartaSans-SemiBold",
+                        }),
+                      }}
+                    >
+                      Your Location
+                    </Text>
+                  </View>
                 </>
               )}
             </>
