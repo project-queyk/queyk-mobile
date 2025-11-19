@@ -178,6 +178,7 @@ export default function EvacuationPlan() {
   } | null>(null);
   const altitudeTimeoutRef = useRef<number | null>(null);
   const altitudeStateRef = useRef<number | null>(altitude);
+  const previousPositionRef = useRef<{ x: number; y: number } | null>(null);
   const startAttemptRef = useRef(0);
 
   const clearAwaitingTimeout = useCallback(() => {
@@ -388,10 +389,12 @@ export default function EvacuationPlan() {
   useEffect(() => {
     if (!isDynamic) {
       setUserPosition(null);
+      previousPositionRef.current = null;
       return;
     }
     if (latitude == null || longitude == null || !isInsideBuilding) {
       setUserPosition(null);
+      previousPositionRef.current = null;
       return;
     }
     try {
@@ -400,9 +403,22 @@ export default function EvacuationPlan() {
         longitude,
         currentFloor.id
       );
+
+      const POSITION_THRESHOLD = 1;
+      if (previousPositionRef.current) {
+        const deltaX = Math.abs(position.x - previousPositionRef.current.x);
+        const deltaY = Math.abs(position.y - previousPositionRef.current.y);
+
+        if (deltaX < POSITION_THRESHOLD && deltaY < POSITION_THRESHOLD) {
+          return;
+        }
+      }
+
+      previousPositionRef.current = position;
       setUserPosition(position);
     } catch {
       setUserPosition(null);
+      previousPositionRef.current = null;
     }
   }, [
     isDynamic,
