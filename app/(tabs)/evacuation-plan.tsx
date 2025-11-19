@@ -172,6 +172,10 @@ export default function EvacuationPlan() {
   const [isInsideBuilding, setIsInsideBuilding] = useState<boolean | null>(
     null
   );
+  const [userPosition, setUserPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const altitudeTimeoutRef = useRef<number | null>(null);
   const altitudeStateRef = useRef<number | null>(altitude);
   const startAttemptRef = useRef(0);
@@ -380,6 +384,34 @@ export default function EvacuationPlan() {
       setSelectedFloor(selectedFloorValue);
     }
   }, [isDynamic, altitude, isInsideBuilding, selectedFloor]);
+
+  useEffect(() => {
+    if (!isDynamic) {
+      setUserPosition(null);
+      return;
+    }
+    if (latitude == null || longitude == null || !isInsideBuilding) {
+      setUserPosition(null);
+      return;
+    }
+    try {
+      const position = calculateUserPosition(
+        latitude,
+        longitude,
+        currentFloor.id
+      );
+      setUserPosition(position);
+    } catch {
+      setUserPosition(null);
+    }
+  }, [
+    isDynamic,
+    latitude,
+    longitude,
+    isInsideBuilding,
+    calculateUserPosition,
+    currentFloor.id,
+  ]);
 
   async function toggleDynamicFloorPlan() {
     const enabling = !isDynamic;
@@ -722,17 +754,14 @@ export default function EvacuationPlan() {
                     />
                     {latitude !== null &&
                       longitude !== null &&
-                      isInsideBuilding && (
+                      isInsideBuilding &&
+                      userPosition && (
                         <View
                           style={[
                             styles.userLocationPin,
                             {
-                              left: `${
-                                calculateUserPosition(latitude, longitude).x
-                              }%`,
-                              top: `${
-                                calculateUserPosition(latitude, longitude).y
-                              }%`,
+                              left: `${userPosition.x}%`,
+                              top: `${userPosition.y}%`,
                             },
                           ]}
                         >
