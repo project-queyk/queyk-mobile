@@ -298,7 +298,7 @@ export default function EvacuationPlan() {
   );
 
   const calculateUserPosition = useCallback(
-    (userLat: number, userLon: number, floorId: string) => {
+    (userLat: number, userLon: number) => {
       const latPercent =
         (userLat - buildingBounds.minLat) /
         (buildingBounds.maxLat - buildingBounds.minLat);
@@ -307,10 +307,11 @@ export default function EvacuationPlan() {
         (buildingBounds.maxLon - buildingBounds.minLon);
 
       let x = (1 - lonPercent) * 100;
-      const y = latPercent * 100;
+      let y = latPercent * 100;
 
-      if (floorId === "first" || floorId === "third") {
+      if (currentFloor.id === "first" || currentFloor.id === "third") {
         x = lonPercent * 100;
+        y = (1 - latPercent) * 100;
       }
 
       return {
@@ -318,7 +319,7 @@ export default function EvacuationPlan() {
         y: Math.max(0, Math.min(100, y)),
       };
     },
-    [buildingBounds]
+    [buildingBounds, currentFloor.id]
   );
 
   useEffect(() => {
@@ -357,7 +358,7 @@ export default function EvacuationPlan() {
       selectedFloorValue = floorsWithAlt[0].value;
     } else if (
       altitude >=
-      floorsWithAlt[floorsWithAlt.length - 1].altitude - 1.0
+      floorsWithAlt[floorsWithAlt.length - 1].altitude - 0.5
     ) {
       selectedFloorValue = floorsWithAlt[floorsWithAlt.length - 1].value;
     } else {
@@ -767,16 +768,16 @@ export default function EvacuationPlan() {
                     <Text
                       style={{
                         marginBottom: 2,
-                      fontSize: 12,
-                      color: "#e7000b",
-                      fontFamily: Platform.select({
-                        android: "PlusJakartaSans_600SemiBold",
-                        ios: "PlusJakartaSans-SemiBold",
-                      }),
-                    }}
-                  >
-                    Emergency Exit
-                  </Text>
+                        fontSize: 12,
+                        color: "#e7000b",
+                        fontFamily: Platform.select({
+                          android: "PlusJakartaSans_600SemiBold",
+                          ios: "PlusJakartaSans-SemiBold",
+                        }),
+                      }}
+                    >
+                      Emergency Exit
+                    </Text>
                   </View>
                   <View
                     style={{
@@ -795,16 +796,16 @@ export default function EvacuationPlan() {
                     <Text
                       style={{
                         marginBottom: 2,
-                      fontSize: 12,
-                      color: "#f2b321",
-                      fontFamily: Platform.select({
-                        android: "PlusJakartaSans_600SemiBold",
-                        ios: "PlusJakartaSans-SemiBold",
-                      }),
-                    }}
-                  >
-                    Normal Lane
-                  </Text>
+                        fontSize: 12,
+                        color: "#f2b321",
+                        fontFamily: Platform.select({
+                          android: "PlusJakartaSans_600SemiBold",
+                          ios: "PlusJakartaSans-SemiBold",
+                        }),
+                      }}
+                    >
+                      Normal Lane
+                    </Text>
                   </View>
                   <View
                     style={{
@@ -921,16 +922,16 @@ export default function EvacuationPlan() {
                     <Text
                       style={{
                         marginBottom: 2,
-                      fontSize: 12,
-                      color: "#e7000b",
-                      fontFamily: Platform.select({
-                        android: "PlusJakartaSans_600SemiBold",
-                        ios: "PlusJakartaSans-SemiBold",
-                      }),
-                    }}
-                  >
-                    Emergency Exit
-                  </Text>
+                        fontSize: 12,
+                        color: "#e7000b",
+                        fontFamily: Platform.select({
+                          android: "PlusJakartaSans_600SemiBold",
+                          ios: "PlusJakartaSans-SemiBold",
+                        }),
+                      }}
+                    >
+                      Emergency Exit
+                    </Text>
                   </View>
                   <View
                     style={{
@@ -949,16 +950,16 @@ export default function EvacuationPlan() {
                     <Text
                       style={{
                         marginBottom: 2,
-                      fontSize: 12,
-                      color: "#f2b321",
-                      fontFamily: Platform.select({
-                        android: "PlusJakartaSans_600SemiBold",
-                        ios: "PlusJakartaSans-SemiBold",
-                      }),
-                    }}
-                  >
-                    Normal Lane
-                  </Text>
+                        fontSize: 12,
+                        color: "#f2b321",
+                        fontFamily: Platform.select({
+                          android: "PlusJakartaSans_600SemiBold",
+                          ios: "PlusJakartaSans-SemiBold",
+                        }),
+                      }}
+                    >
+                      Normal Lane
+                    </Text>
                   </View>
                 </>
               )}
