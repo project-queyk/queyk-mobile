@@ -357,7 +357,7 @@ export default function EvacuationPlan() {
       selectedFloorValue = floorsWithAlt[0].value;
     } else if (
       altitude >=
-      floorsWithAlt[floorsWithAlt.length - 1].altitude - 0.5
+      floorsWithAlt[floorsWithAlt.length - 1].altitude - 1.0
     ) {
       selectedFloorValue = floorsWithAlt[floorsWithAlt.length - 1].value;
     } else {
