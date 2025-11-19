@@ -728,18 +728,10 @@ export default function EvacuationPlan() {
                             styles.userLocationPin,
                             {
                               left: `${
-                                calculateUserPosition(
-                                  latitude,
-                                  longitude,
-                                  currentFloor.id
-                                ).x
+                                calculateUserPosition(latitude, longitude).x
                               }%`,
                               top: `${
-                                calculateUserPosition(
-                                  latitude,
-                                  longitude,
-                                  currentFloor.id
-                                ).y
+                                calculateUserPosition(latitude, longitude).y
                               }%`,
                             },
                           ]}
@@ -747,7 +739,7 @@ export default function EvacuationPlan() {
                           <Ionicons
                             name="location"
                             size={24}
-                            color="#FF0000"
+                            color="#193867"
                             style={{
                               shadowColor: "#000",
                               shadowOffset: { width: 0, height: 2 },
@@ -762,34 +754,6 @@ export default function EvacuationPlan() {
               </View>
               {isGif && isInsideBuilding && (
                 <>
-                  <Text
-                    style={{
-                      marginTop: 8,
-                      fontSize: 12,
-                      textAlign: "center",
-                      color: "#e7000b",
-                      fontFamily: Platform.select({
-                        android: "PlusJakartaSans_600SemiBold",
-                        ios: "PlusJakartaSans-SemiBold",
-                      }),
-                    }}
-                  >
-                    Emergency Exit
-                  </Text>
-                  <Text
-                    style={{
-                      marginTop: 8,
-                      fontSize: 12,
-                      textAlign: "center",
-                      color: "#f2b321",
-                      fontFamily: Platform.select({
-                        android: "PlusJakartaSans_600SemiBold",
-                        ios: "PlusJakartaSans-SemiBold",
-                      }),
-                    }}
-                  >
-                    Normal Lane
-                  </Text>
                   <View
                     style={{
                       flexDirection: "row",
@@ -799,11 +763,64 @@ export default function EvacuationPlan() {
                       gap: 6,
                     }}
                   >
-                    <Ionicons name="location" size={16} color="#FF0000" />
+                    <Ionicons name="exit" size={16} color="#e7000b" />
                     <Text
                       style={{
+                        marginBottom: 2,
+                      fontSize: 12,
+                      color: "#e7000b",
+                      fontFamily: Platform.select({
+                        android: "PlusJakartaSans_600SemiBold",
+                        ios: "PlusJakartaSans-SemiBold",
+                      }),
+                    }}
+                  >
+                    Emergency Exit
+                  </Text>
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginTop: 8,
+                      gap: 6,
+                    }}
+                  >
+                    <MaterialIcons
+                      name="directions"
+                      size={16}
+                      color="#f2b321"
+                    />
+                    <Text
+                      style={{
+                        marginBottom: 2,
+                      fontSize: 12,
+                      color: "#f2b321",
+                      fontFamily: Platform.select({
+                        android: "PlusJakartaSans_600SemiBold",
+                        ios: "PlusJakartaSans-SemiBold",
+                      }),
+                    }}
+                  >
+                    Normal Lane
+                  </Text>
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginTop: 8,
+                      gap: 6,
+                    }}
+                  >
+                    <Ionicons name="location" size={16} color="#193867" />
+                    <Text
+                      style={{
+                        marginBottom: 2,
                         fontSize: 12,
-                        color: "#FF0000",
+                        color: "#193867",
                         fontFamily: Platform.select({
                           android: "PlusJakartaSans_600SemiBold",
                           ios: "PlusJakartaSans-SemiBold",
@@ -891,11 +908,20 @@ export default function EvacuationPlan() {
               </Pressable>
               {isGif && (
                 <>
-                  <Text
+                  <View
                     style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
                       marginTop: 8,
+                      gap: 6,
+                    }}
+                  >
+                    <Ionicons name="exit" size={16} color="#e7000b" />
+                    <Text
+                      style={{
+                        marginBottom: 2,
                       fontSize: 12,
-                      textAlign: "center",
                       color: "#e7000b",
                       fontFamily: Platform.select({
                         android: "PlusJakartaSans_600SemiBold",
@@ -905,11 +931,25 @@ export default function EvacuationPlan() {
                   >
                     Emergency Exit
                   </Text>
-                  <Text
+                  </View>
+                  <View
                     style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
                       marginTop: 8,
+                      gap: 6,
+                    }}
+                  >
+                    <MaterialIcons
+                      name="directions"
+                      size={16}
+                      color="#f2b321"
+                    />
+                    <Text
+                      style={{
+                        marginBottom: 2,
                       fontSize: 12,
-                      textAlign: "center",
                       color: "#f2b321",
                       fontFamily: Platform.select({
                         android: "PlusJakartaSans_600SemiBold",
@@ -919,6 +959,7 @@ export default function EvacuationPlan() {
                   >
                     Normal Lane
                   </Text>
+                  </View>
                 </>
               )}
             </>
