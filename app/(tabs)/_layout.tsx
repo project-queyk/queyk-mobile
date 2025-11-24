@@ -1,14 +1,17 @@
 import { Tabs } from "expo-router";
 import React from "react";
 import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { useAuth } from "@/contexts/AuthContext";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useAuth } from "@/contexts/AuthContext";
 
 export default function TabLayout() {
   const { userData } = useAuth();
   const isAdmin = userData?.role === "admin";
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -28,8 +31,8 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: "#F2F4F7",
           paddingTop: 6,
-          paddingBottom: 6,
-          height: 84,
+          paddingBottom: Math.max(6, insets.bottom),
+          height: 76 + Math.max(0, insets.bottom - 6),
           borderTopColor: "#e2e3e4ff",
         },
         tabBarLabelStyle: {
